@@ -67,7 +67,8 @@ put a full `Movie.en.srt` beside the video and tap **Redo**.
 | Feature | Reality |
 |---|---|
 | Offline translation | ML Kit EN→AR on device after the model downloads once |
-| Offline speech-to-text | Vosk small-en transcribes videos with no subtitles (beta, English audio) |
+| Offline speech-to-text | Vosk small-en & whisper.cpp transcribe videos with no subtitles (beta, English audio) |
+| Local LLM Translation | 2-stage whisper.cpp + llama.cpp / Qwen 2.5 1.5B (GGUF Q4_K_M) batched translation pipeline |
 | Translation memory | Repeated lines cached on disk across runs — no re-translate lag |
 | In-app preview | Cues rendered like a real player, AR/EN toggle |
 | Background scans | WorkManager at your interval (15 min – 6 hours) |
@@ -123,6 +124,8 @@ jellyfin-addon/
 ├── subarabify_jellyfin.py    # Server/Termux addon (model download → scan → write, --stt fallback)
 ├── srtcore.py                # Same SRT rules as SrtParser.kt (parity)
 ├── stt.py                    # Server STT fallback (ffmpeg + faster-whisper)
+├── whisper_cpp.py            # whisper.cpp engine wrapper (16kHz WAV -> JSON transcript)
+├── llm_translator.py         # llama.cpp / Qwen 2.5 1.5B GGUF batch translation wrapper
 └── manifest.json             # Jellyfin plugin-repository manifest (1.0.3-beta)
 ```
 
