@@ -1,0 +1,19 @@
+# Built files
+*.iml
+.gradle/
+local.properties
+.idea/
+*.hprof
+build/
+app/build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Keystore
+*.jks
+*.keystore
+
+# Release artifacts already on Pages
+public/

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SubArabify — Automatic Arabic Subtitles</title>
+  <meta name="description" content="On-device, offline subtitle translation to Arabic. Powered by ML Kit. No cloud, no data sent anywhere." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0A0E14;
+      --surface:  #111820;
+      --card:     #1A2232;
+      --border:   #2A3545;
+      --gold:     #F0A500;
+      --gold-dim: #D4A017;
+      --cyan:     #22D3EE;
+      --green:    #4ADE80;
+      --txt:      #F1F5F9;
+      --txt2:     #94A3B8;
+      --txt3:     #64748B;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--txt);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Ambient glow ── */
+    .glow {
+      position: fixed;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      filter: blur(160px);
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glow-1 { top: -120px; right: -80px; background: var(--gold); }
+    .glow-2 { bottom: -200px; left: -100px; background: var(--cyan); opacity: 0.10; }
+
+    .container {
+      position: relative; z-index: 1;
+      max-width: 720px; margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* ── Nav ── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 0 48px;
+    }
+    .logo {
+      font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--gold); }
+    .badge {
+      font-size: 0.7rem; font-weight: 600;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 999px; padding: 4px 12px;
+      color: var(--txt2);
+    }
+
+    /* ── Hero ── */
+    .hero { text-align: center; margin-bottom: 56px; }
+    .hero-emoji { font-size: 4rem; margin-bottom: 16px; display: block; }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 900; letter-spacing: -1.5px;
+      line-height: 1.15; margin-bottom: 16px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.1rem; color: var(--txt2);
+      max-width: 520px; margin: 0 auto 32px; line-height: 1.7;
+    }
+    .hero .cta {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 16px 36px; border-radius: 16px; border: none;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+      color: var(--bg); font-size: 1rem; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.3s;
+      box-shadow: 0 4px 24px rgba(240, 165, 0, 0.25);
+    }
+    .hero .cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 40px rgba(240, 165, 0, 0.35);
+    }
+    .hero .cta svg { width: 20px; height: 20px; }
+
+    /* ── Feature cards ── */
+    .features {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 16px; margin-bottom: 48px;
+    }
+    @media (max-width: 540px) { .features { grid-template-columns: 1fr; } }
+    .feature-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 24px;
+      transition: border-color 0.3s, transform 0.2s;
+    }
+    .feature-card:hover {
+      border-color: var(--gold); transform: translateY(-2px);
+    }
+    .feature-card .icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 14px;
+    }
+    .feature-card h3 {
+      font-size: 1rem; font-weight: 700; margin-bottom: 6px;
+    }
+    .feature-card p {
+      font-size: 0.85rem; color: var(--txt3); line-height: 1.5;
+    }
+
+    /* ── How it works ── */
+    .how { margin-bottom: 48px; }
+    .how h2 {
+      font-size: 1.5rem; font-weight: 800;
+      margin-bottom: 24px; letter-spacing: -0.5px;
+    }
+    .steps { display: flex; flex-direction: column; gap: 16px; }
+    .step {
+      display: flex; align-items: flex-start; gap: 16px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px;
+    }
+    .step-num {
+      width: 36px; height: 36px; min-width: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+      color: var(--bg); font-weight: 800; font-size: 0.9rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+    .step p { font-size: 0.83rem; color: var(--txt3); line-height: 1.5; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; padding-top: 40px;
+      border-top: 1px solid var(--border);
+      color: var(--txt3); font-size: 0.8rem;
+    }
+    footer a { color: var(--gold); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+
+  <div class="container">
+    <nav>
+      <div class="logo">Sub<span>Arabify</span></div>
+      <div class="badge">v1.0.0</div>
+    </nav>
+
+    <section class="hero">
+      <span class="hero-emoji">🎬</span>
+      <h1>Automatic <em>Arabic Subtitles</em> for Your Media</h1>
+      <p>
+        SubArabify monitors your movie folders and translates English subtitles
+        to Arabic — completely on-device, offline, with zero data sent to the cloud.
+      </p>
+      <a class="cta" href="SubArabify-latest.apk" download>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 20h14v-2H5v2zm7-18L5.33 9h3.84v4h3.66V9h3.84L12 2z"/></svg>
+        Download APK
+      </a>
+    </section>
+
+    <section class="features">
+      <div class="feature-card">
+        <div class="icon" style="background:rgba(240,165,0,0.12);">🔒</div>
+        <h3>100% Offline</h3>
+        <p>ML Kit's on-device model runs entirely on your phone. No internet needed after initial model download.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon" style="background:rgba(74,222,128,0.12);">⚡</div>
+        <h3>Background Monitoring</h3>
+        <p>WorkManager scans your media folders periodically and auto-translates new subtitle files.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon" style="background:rgba(34,211,238,0.12);">🎯</div>
+        <h3>Smart Detection</h3>
+        <p>Automatically finds videos missing Arabic subtitles and creates .ar.srt files alongside them.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon" style="background:rgba(251,191,36,0.12);">✏️</div>
+        <h3>Thmanyah Sans Font</h3>
+        <p>Generated subtitles use the premium Thmanyah Sans typeface for beautiful Arabic readability.</p>
+      </div>
+    </section>
+
+    <section class="how">
+      <h2>How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div>
+            <h4>Select Your Library</h4>
+            <p>Use Android's Storage Access Framework to pick your Movies or TV Shows folder.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>
+            <h4>Enable Monitoring</h4>
+            <p>Toggle background scanning. SubArabify checks for new media at your chosen interval.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div>
+            <h4>Enjoy Arabic Subs</h4>
+            <p>English .srt files are translated on-device. The Arabic .ar.srt file appears next to your video.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>SubArabify &copy; 2024 &mdash; Open-source, on-device, privacy-first.<br />
+        <a href="https://github.com/">View on GitHub</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>
