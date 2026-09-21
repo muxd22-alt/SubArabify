@@ -5,6 +5,22 @@ media server **and** on Android via **Termux** (pure Python — no .NET needed).
 
 ![SubArabify icon](../docs/icon.jpg)
 
+## Add it to Jellyfin → Repositories (correct URL)
+
+Jellyfin **Repositories** only accept a `manifest.json` URL — a
+`github.com/.../tree/...` page link will never load. Paste exactly this
+(Dashboard → Plugins → Repositories → New Repository):
+
+```
+https://muxd22-alt.github.io/SubArabify/jellyfin-manifest.json
+```
+
+You'll see **SubArabify Arabic Subtitles 1.0.3-beta with the app icon** and
+version info. Then **enable it by running the companion** (one command below) —
+Jellyfin's catalog can only Install `.NET` plugins, and this addon is a native
+Python companion (that's what makes Termux possible), so the repository entry
+is for discovery/version while enabling happens on the server.
+
 ## What happens when you enable it
 
 1. **First downloads the small Arabic model once** — `Helsinki-NLP/opus-mt-en-ar`
@@ -45,11 +61,13 @@ Systemd: copy `subarabify.service` to `/etc/systemd/system/`, edit the
 
 ## Jellyfin plugin repository
 
-`manifest.json` in this folder describes the addon for a Jellyfin plugin
-repository (v1.0.3-beta, icon = `docs/icon.jpg`). Because this addon is a
-native Python companion (Termux-compatible), install it via the steps above
-rather than as a `.dll` — the manifest carries the same id/version/changelog
-so it shows up as one entry everywhere.
+`manifest.json` in this folder is the Jellyfin repository manifest template
+(array format, stable guid, `imageUrl` = the SubArabify icon, version 1.0.3-beta).
+CI fills in the real zip checksum + timestamp and publishes it at
+`https://muxd22-alt.github.io/SubArabify/jellyfin-manifest.json` — that is the
+URL to paste into Jellyfin → Repositories. Because this addon is a native
+Python companion (Termux-compatible, not a `.dll`), the repository entry gives
+you icon + version/discovery while enabling = running the companion above.
 
 ## Files
 

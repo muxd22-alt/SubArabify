@@ -41,6 +41,21 @@ jobs:
       - name: Self-test Jellyfin addon core
         run: python3 jellyfin-addon/test_srtcore.py
 
+      - name: Publish Jellyfin repository manifest (real checksum + timestamp)
+        run: |
+          python3 - <<'EOF'
+          import hashlib, datetime, pathlib
+          zf = pathlib.Path("public/subarabify-jellyfin-addon-1.0.3-beta.zip")
+          sha = hashlib.sha256(zf.read_bytes()).hexdigest()
+          ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+          tpl = pathlib.Path("jellyfin-addon/manifest.json").read_text(encoding="utf-8")
+          out = tpl.replace("__CHECKSUM__", sha).replace("__TIMESTAMP__", ts)
+          assert "__" not in out.split('"checksum"')[1].split('"')[1], "checksum placeholder not filled"
+          pathlib.Path("public/jellyfin-manifest.json").write_text(out, encoding="utf-8")
+          print("jellyfin-manifest.json sha256:", sha)
+          print("timestamp:", ts)
+          EOF
+
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:

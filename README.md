@@ -91,6 +91,15 @@ When enabled it **first downloads the small Arabic LLM** (`Helsinki-NLP/opus-mt-
 `Movie.SubArabify.ar.srt` with the app name and untouched timings.
 Full docs: [`jellyfin-addon/README.md`](jellyfin-addon/README.md).
 
+**Jellyfin → Repositories URL** (Dashboard → Plugins → Repositories → New Repository —
+paste the `manifest.json` URL, not a GitHub page link):
+
+```
+https://muxd22-alt.github.io/SubArabify/jellyfin-manifest.json
+```
+
+Shows the SubArabify icon + 1.0.3-beta; enabling = running the companion above.
+
 ## Architecture
 
 ```

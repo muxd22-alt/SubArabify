@@ -1,14 +1,21 @@
-{
-  "name": "SubArabify Arabic Subtitles",
-  "guid": "9b4e5c2a-subarabify-arabic-subtitles-103beta",
-  "version": "1.0.3-beta",
-  "description": "On-server EN→AR subtitles. Downloads a small Arabic NMT model once, then writes Movie.SubArabify.ar.srt next to each video with bit-identical timings. Runs on normal servers and on Android via Termux (pure Python, no .NET).",
-  "overview": "Automatic Arabic subtitles for your Jellyfin library. Offline after the one-time model download. Brand cues only in free gaps — dialogue sync untouched.",
-  "owner": "SubArabify",
-  "category": "Subtitles",
-  "imageUrl": "https://muxd22-alt.github.io/SubArabify/icon.jpg",
-  "targetAbi": "net8.0",
-  "status": "Beta",
-  "sourceUrl": "https://github.com/muxd22-alt/SubArabify/tree/main/jellyfin-addon",
-  "changelog": "1.0.3-beta: smart chunked translation, persistent memory, timing-safe branding, Termux support, VTT input."
-}
+[
+  {
+    "guid": "debd3e42-f52d-4ba1-8df1-31e9bd3dd3e7",
+    "name": "SubArabify Arabic Subtitles",
+    "overview": "On-server EN→AR subtitles with untouched timings. Native Python companion — runs on normal servers and on Android via Termux.",
+    "description": "SubArabify server companion (NOT a .NET plugin — do not Install from the catalog). Add this repository for version/discovery info with the SubArabify icon, then enable with one command: Termux `bash jellyfin-addon/run-termux.sh ~/storage/movies`, or server `pip install -r jellyfin-addon/requirements.txt` + `python jellyfin-addon/subarabify_jellyfin.py --media /media --watch`. On enable it downloads the small Arabic model once, then writes Movie.SubArabify.ar.srt next to each video with bit-identical timings. Full docs: jellyfin-addon/README.md.",
+    "owner": "SubArabify",
+    "category": "Subtitles",
+    "imageUrl": "https://muxd22-alt.github.io/SubArabify/icon.jpg",
+    "versions": [
+      {
+        "version": "1.0.3-beta",
+        "changelog": "1.0.3-beta: smart chunked translation, persistent memory, timing-safe branding, Termux support, VTT input.",
+        "targetAbi": "net8.0",
+        "sourceUrl": "https://muxd22-alt.github.io/SubArabify/subarabify-jellyfin-addon-1.0.3-beta.zip",
+        "checksum": "__CHECKSUM__",
+        "timestamp": "__TIMESTAMP__"
+      }
+    ]
+  }
+]
