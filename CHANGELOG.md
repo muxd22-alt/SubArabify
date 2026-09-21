@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.0.3-beta — speech-to-text update
+
+No subtitle file? The app/server now listens (WhisperSubs-style, fully offline).
+
+**Android (on-device, Vosk small-en ~40 MB, downloaded once)**
+- `SttEngine` + `AudioExtractor`: video audio → 16 kHz mono PCM stream
+  (MediaCodec, SAF-safe, never a whole movie in RAM) → English words with real
+  timestamps → grouped into cues → normal smart EN→AR translation
+- Worker: no source ⇒ status `transcribing` with % progress ⇒ same branded
+  `*.SubArabify.ar.srt`, same preview; log shows `STT OK`
+- UI: STT line in the model card, mic icon + progress per item
+
+**Jellyfin addon (`--stt` / `SUBARABIFY_STT=1`)**
+- `stt.py`: ffmpeg (Jellyfin's bundled one first) + faster-whisper `tiny.en`
+  (CPU int8, downloaded once) → word-timestamp cues → same translation/branding
+- Graceful when uninstalled/missing ffmpeg: stays `pending` with a clear log line
+
+**Limits (honest):** English audio only in this pass (small-en / tiny.en are
+English models) — anything else stays `pending`; music-heavy content may
+transcribe sparsely.
+
 ## 1.0.3-beta
 
 Smart translation + real in-app value + Jellyfin addon, one icon everywhere.

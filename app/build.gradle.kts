@@ -63,6 +63,9 @@ dependencies {
     // Google ML Kit On-Device Translation (Offline English -> Arabic)
     implementation("com.google.mlkit:translate:17.0.3")
 
+    // Vosk on-device speech-to-text (offline English transcription, word timestamps)
+    implementation("com.alphacephei:vosk-android:0.3.47")
+
     // WorkManager for continuous background monitoring
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 

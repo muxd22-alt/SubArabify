@@ -468,7 +468,7 @@
         <div class="feat"><div class="ico">🧠</div><strong>Context translation</strong><span>Speaker labels shielded, cues batched, glossary + Arabic punctuation fix.</span></div>
         <div class="feat"><div class="ico">⚡</div><strong>No lag between runs</strong><span>~10 model calls per movie + on-disk memory for repeats.</span></div>
         <div class="feat"><div class="ico">🎬</div><strong>Subtitle preview</strong><span>Cues rendered like a real player, AR/EN toggle, timings shown.</span></div>
-        <div class="feat"><div class="ico">🔍</div><strong>Finds more sources</strong><span>Fuzzy base match, any-language fallback, .vtt input.</span></div>
+        <div class="feat"><div class="ico">🔍</div><strong>Finds more sources</strong><span>Fuzzy match, any-language fallback, .vtt — or auto-transcribes English audio offline (beta).</span></div>
         <div class="feat"><div class="ico">⏱️</div><strong>Sync-safe brand</strong><span>Brand cues only in free gaps — dialogue timings never touched.</span></div>
         <div class="feat"><div class="ico">📺</div><strong>Jellyfin addon</strong><span>Same engine on servers + Android Termux. See below.</span></div>
       </div>
@@ -554,7 +554,7 @@
       <h2>Be clear about limits</h2>
       <p class="sub">Honest beta notes.</p>
       <ul>
-        <li>Needs an existing subtitle source (any <code>.srt</code>/<code>.vtt</code>, fuzzy-matched) — speech-to-text from audio is not ready yet</li>
+        <li>No subtitle file? The app transcribes English audio offline (beta); the server addon does the same with <code>--stt</code> — non-English audio stays pending</li>
         <li>Model downloads once (needs network that first time), then 100% offline; repeats served from memory</li>
         <li>Current APK is a debug-signed beta from CI, not a Play Store build</li>
       </ul>

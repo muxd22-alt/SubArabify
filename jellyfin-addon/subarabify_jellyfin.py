@@ -239,12 +239,15 @@ def existing_ar(folder: Path, base: str):
     return None
 
 
-def process_movie(video: Path, tm: TM, force=False):
+def process_movie(video: Path, tm: TM, force=False, stt=False):
     folder, base = video.parent, video.stem
     if existing_ar(folder, base) and not force:
         return "done"
     src = find_source(folder, base)
     if src is None:
+        # ── No subtitle file → optional speech-to-text from audio ──
+        if stt:
+            return transcribe_audio(video, tm, force=force)
         return "pending"
     try:
         raw = src.read_text(encoding="utf-8-sig")
@@ -286,6 +289,43 @@ def process_movie(video: Path, tm: TM, force=False):
     return "success"
 
 
+def transcribe_audio(video: Path, tm: TM, force=False):
+    """STT fallback (WhisperSubs-style): transcribe English audio offline,
+    translate to Arabic, write the same branded file. Returns a status str."""
+    import srtcore as _core  # local import: keeps module import light
+    folder, base = video.parent, video.stem
+    if existing_ar(folder, base) and not force:
+        return "done"
+    try:
+        import stt as _stt
+    except ImportError as e:
+        print(f"[{base}] STT unavailable: {e}", file=sys.stderr)
+        return "pending"
+    try:
+        cues, heard = _stt.transcribe(video)
+    except RuntimeError as e:
+        print(f"[{base}] STT skipped: {e}", file=sys.stderr)
+        return "pending"
+    except Exception as e:
+        print(f"[{base}] STT failed: {e}", file=sys.stderr)
+        return "error"
+    if not heard or len(cues) < 10:
+        print(f"[{base}] STT heard too little ({len(cues)} cues)")
+        return "pending"
+    blocks = [{"index": str(i + 1),
+               "timecode": f"{_core.ms_to_tc(int(c['start'] * 1000))} --> "
+                           f"{_core.ms_to_tc(int(c['end'] * 1000))}",
+               "lines": [c["text"]]} for i, c in enumerate(cues)]
+    cores = [c["text"] for c in cues]
+    ars = translate_texts(cores, tm)
+    translated = [[a] for a in ars]
+    content = _core.build_branded_srt(blocks, translated)
+    out = folder / f"{base}.SubArabify.ar.srt"
+    out.write_text(content, encoding="utf-8")
+    print(f"[{base}] wrote {out.name} from STT ({len(blocks)} cues, real audio timings)")
+    return "stt_success"
+
+
 def iter_videos(media_dirs):
     for d in media_dirs:
         root = Path(d).expanduser()
@@ -312,14 +352,15 @@ def jellyfin_refresh():
         print(f"[jellyfin] refresh failed: {e}", file=sys.stderr)
 
 
-def scan(media_dirs, force=False):
+def scan(media_dirs, force=False, stt=False):
     tm = TM(TM_FILE)
-    stats = {"success": 0, "done": 0, "pending": 0, "weak_source": 0, "error": 0}
+    stats = {"success": 0, "stt_success": 0, "done": 0, "pending": 0,
+             "weak_source": 0, "error": 0}
     videos = list(iter_videos(media_dirs))
     print(f"[scan] {len(videos)} videos in {len(media_dirs)} dir(s).")
     for v in videos:
         try:
-            r = process_movie(v, tm, force=force)
+            r = process_movie(v, tm, force=force, stt=stt)
         except Exception as e:
             print(f"[{v.stem}] failed: {e}", file=sys.stderr)
             r = "error"
@@ -337,22 +378,28 @@ def main():
     ap.add_argument("--watch", action="store_true", help="rescan every --interval minutes")
     ap.add_argument("--interval", type=int, default=60, help="watch interval in minutes (default 60)")
     ap.add_argument("--force", action="store_true", help="retranslate even if output exists")
+    ap.add_argument("--stt", action="store_true",
+                    help="transcribe English audio offline (faster-whisper) when no "
+                         "subtitle file exists — WhisperSubs-style fallback. "
+                         "First use downloads the whisper model once. "
+                         "Also enabled via SUBARABIFY_STT=1.")
     ap.add_argument("--jellyfin-refresh", action="store_true",
                     help="trigger Jellyfin library refresh after scan (needs JELLYFIN_URL + JELLYFIN_API_KEY)")
     args = ap.parse_args()
 
     media = args.media or ([os.environ["SUBARABIFY_MEDIA_DIR"]] if os.environ.get("SUBARABIFY_MEDIA_DIR") else ["/media"])
+    use_stt = args.stt or os.environ.get("SUBARABIFY_STT", "") == "1"
     # ⬇ model downloads HERE on enable — before touching any movie
     ensure_model()
     if args.watch:
         while True:
-            scan(media, force=args.force)
+            scan(media, force=args.force, stt=use_stt)
             if args.jellyfin_refresh:
                 jellyfin_refresh()
             print(f"[watch] sleeping {args.interval}m…")
             time.sleep(args.interval * 60)
     else:
-        scan(media, force=args.force)
+        scan(media, force=args.force, stt=use_stt)
         if args.jellyfin_refresh:
             jellyfin_refresh()
 

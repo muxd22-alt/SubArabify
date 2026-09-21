@@ -17,3 +17,4 @@ Thumbs.db
 
 # Release artifacts already on Pages
 public/
+__pycache__/

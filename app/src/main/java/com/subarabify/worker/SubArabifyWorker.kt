@@ -53,6 +53,7 @@ class SubArabifyWorker(
         val forceRetranslate = inputData.getBoolean("FORCE_RETRANSLATE", false)
         val targetBase = inputData.getString("TARGET_BASE") // null = all
         val oneOnly = inputData.getBoolean("ONE_ONLY", false)
+        val enableStt = inputData.getBoolean("ENABLE_STT", true)
 
         val memory = TranslationMemory(context.applicationContext)
         val translator = MlKitTranslator(memory)
@@ -62,12 +63,15 @@ class SubArabifyWorker(
         }
         markModelReady(true)
 
+        // STT model is lazy: only downloaded when a video actually needs it
+        val stt = com.subarabify.engine.SttEngine(context.applicationContext)
+
         val skipSet = loadSkipSet()
         val stats = ScanStats()
 
         scanAndProcessFolder(
-            directory, translator, skipSet, stats,
-            forceRetranslate, targetBase, oneOnly,
+            directory, translator, stt, skipSet, stats,
+            forceRetranslate, targetBase, oneOnly, enableStt,
         )
         translator.close()
 
@@ -83,7 +87,8 @@ class SubArabifyWorker(
 
         Log.i(
             TAG,
-            "Scan complete: ${stats.translated} translated, ${stats.skipped} skipped, " +
+            "Scan complete: ${stats.translated} translated (${stats.transcribed} via STT), " +
+                "${stats.skipped} skipped, " +
                 "${stats.alreadyDone} already done, ${stats.pending} pending, " +
                 "${stats.weakSource} weak source, mem=${stats.fromMemory}, " +
                 "glossary=${stats.fromGlossary}, model=${stats.fromModel}"
@@ -93,6 +98,7 @@ class SubArabifyWorker(
 
     private data class ScanStats(
         var translated: Int = 0,
+        var transcribed: Int = 0,
         var alreadyDone: Int = 0,
         var skipped: Int = 0,
         var pending: Int = 0,
@@ -106,17 +112,19 @@ class SubArabifyWorker(
     private suspend fun scanAndProcessFolder(
         folder: DocumentFile,
         translator: MlKitTranslator,
+        stt: com.subarabify.engine.SttEngine,
         skipSet: Set<String>,
         stats: ScanStats,
         forceRetranslate: Boolean,
         targetBase: String?,
         oneOnly: Boolean,
+        enableStt: Boolean,
     ): Boolean {
         for (file in folder.listFiles()) {
             if (file.isDirectory) {
                 val stop = scanAndProcessFolder(
-                    file, translator, skipSet, stats,
-                    forceRetranslate, targetBase, oneOnly,
+                    file, translator, stt, skipSet, stats,
+                    forceRetranslate, targetBase, oneOnly, enableStt,
                 )
                 if (stop) return true
                 continue
@@ -147,6 +155,15 @@ class SubArabifyWorker(
 
             val srcFile = StorageHelper.findBestSource(folder, baseName)
             if (srcFile == null) {
+                // ── No subtitle file → speech-to-text from audio (offline) ──
+                if (enableStt) {
+                    val sttOk = transcribeAudio(
+                        folder, file, baseName, translator, stt, stats, forceRetranslate,
+                    )
+                    if (oneOnly && targetBase != null) return true
+                    if (sttOk) continue
+                    // fall through to pending if STT produced nothing usable
+                }
                 stats.pending++
                 markFolderStatus(baseName, "pending")
                 savePreview(baseName, emptyList(), 0, noSource = true)
@@ -243,6 +260,61 @@ class SubArabifyWorker(
         }
     }
 
+    /**
+     * STT fallback: transcribe the video's audio track offline, then run the
+     * normal smart translation on the resulting English blocks. Output file,
+     * branding and preview are identical to the subtitle-file path.
+     * Returns true if the item is resolved (done or deliberately skipped).
+     */
+    private suspend fun transcribeAudio(
+        parentFolder: DocumentFile,
+        videoFile: DocumentFile,
+        baseName: String,
+        translator: MlKitTranslator,
+        stt: com.subarabify.engine.SttEngine,
+        stats: ScanStats,
+        forceRetranslate: Boolean,
+    ): Boolean {
+        markFolderStatus(baseName, "transcribing")
+        setProgressText(baseName, 0, 100)
+        // Small English model downloads once (needs network that first time)
+        if (!stt.ensureModel()) {
+            Log.w(TAG, "STT model not ready for $baseName — pending")
+            return false
+        }
+        val enBlocks = try {
+            stt.transcribe(videoFile.uri) { decodedUs, totalUs ->
+                val pct = if (totalUs > 0) (decodedUs * 100 / totalUs).toInt().coerceIn(0, 100) else 0
+                setProgressText(baseName, pct, 100)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "STT failed for $baseName", e)
+            emptyList()
+        }
+        if (enBlocks.size < 10) {
+            Log.w(TAG, "STT heard too little in $baseName (${enBlocks.size} cues)")
+            stats.logEntries.add("$baseName|||stt_empty|||${System.currentTimeMillis()}")
+            return false
+        }
+        if (forceRetranslate) deleteArabicOutputs(parentFolder, baseName)
+        val success = translateBlocksToFile(
+            parentFolder, baseName, enBlocks, translator,
+            onProgress = { done, total -> setProgressText(baseName, done, total) },
+        )
+        if (success) {
+            stats.translated++
+            stats.transcribed++
+            stats.fromMemory += translator.lastStats.fromMemory
+            stats.fromGlossary += translator.lastStats.fromGlossary
+            stats.fromModel += translator.lastStats.fromModel
+            markFolderStatus(baseName, "done")
+            stats.logEntries.add("$baseName|||stt_success|||${System.currentTimeMillis()}")
+            return true
+        }
+        stats.logEntries.add("$baseName|||error|||${System.currentTimeMillis()}")
+        return false
+    }
+
     private suspend fun translateExistingSrt(
         parentFolder: DocumentFile,
         srcFile: DocumentFile,
@@ -256,31 +328,67 @@ class SubArabifyWorker(
             val translatedBlocks = translator.translateBlocks(blocks) { done, total ->
                 onProgress?.invoke(done, total)
             }
-
-            val arSrtContent = SrtParser.buildBrandedSrt(blocks, translatedBlocks)
-
-            // SAF often turns "a.b.c.srt" into "a_b_c.srt". Pass name WITHOUT
-            // a trailing .srt and let the MIME add .srt → "base.SubArabify.ar.srt"
-            val createName = "$baseName.SubArabify.ar"
-            val newFile = parentFolder.createFile("application/x-subrip", createName)
-                ?: parentFolder.createFile("text/plain", createName)
-                ?: return false
-
-            context.contentResolver.openOutputStream(newFile.uri)?.use {
-                it.write(arSrtContent.toByteArray(Charsets.UTF_8))
-            } ?: return false
-
-            // Save preview so the app shows real subtitles, not just a filename
-            val previews = SrtParser.buildPreviews(blocks, translatedBlocks, PREVIEW_CUES)
-            savePreview(baseName, previews, blocks.size)
-
-            Log.i(TAG, "Wrote Arabic SRT as '${newFile.name}' (${blocks.size} cues) from '${srcFile.name}' " +
-                "(mem=${translator.lastStats.fromMemory}, glo=${translator.lastStats.fromGlossary}, model=${translator.lastStats.fromModel})")
-            true
+            val ok = writeArabicSrt(parentFolder, baseName, blocks, translatedBlocks)
+            if (ok) {
+                Log.i(TAG, "Wrote Arabic SRT (${blocks.size} cues) from '${srcFile.name}' " +
+                    "(mem=${translator.lastStats.fromMemory}, glo=${translator.lastStats.fromGlossary}, model=${translator.lastStats.fromModel})")
+            }
+            ok
         } catch (e: Exception) {
             Log.e(TAG, "Translation failed for $baseName", e)
             false
         }
+    }
+
+    /** Shared writer: translate EN blocks → branded AR file + preview. */
+    private suspend fun translateBlocksToFile(
+        parentFolder: DocumentFile,
+        baseName: String,
+        enBlocks: List<com.subarabify.data.SrtBlock>,
+        translator: MlKitTranslator,
+        onProgress: ((done: Int, total: Int) -> Unit)? = null,
+    ): Boolean {
+        return try {
+            val translatedBlocks = translator.translateBlocks(enBlocks) { done, total ->
+                onProgress?.invoke(done, total)
+            }
+            val ok = writeArabicSrt(parentFolder, baseName, enBlocks, translatedBlocks)
+            if (ok) {
+                Log.i(TAG, "Wrote Arabic SRT from STT (${enBlocks.size} cues) " +
+                    "(mem=${translator.lastStats.fromMemory}, glo=${translator.lastStats.fromGlossary}, model=${translator.lastStats.fromModel})")
+            }
+            ok
+        } catch (e: Exception) {
+            Log.e(TAG, "STT translation failed for $baseName", e)
+            false
+        }
+    }
+
+    private fun writeArabicSrt(
+        parentFolder: DocumentFile,
+        baseName: String,
+        blocks: List<com.subarabify.data.SrtBlock>,
+        translatedBlocks: List<List<String>>,
+    ): Boolean {
+        val arSrtContent = SrtParser.buildBrandedSrt(blocks, translatedBlocks)
+
+        // SAF often turns "a.b.c.srt" into "a_b_c.srt". Pass name WITHOUT
+        // a trailing .srt and let the MIME add .srt → "base.SubArabify.ar.srt"
+        val createName = "$baseName.SubArabify.ar"
+        val newFile = parentFolder.createFile("application/x-subrip", createName)
+            ?: parentFolder.createFile("text/plain", createName)
+            ?: return false
+
+        context.contentResolver.openOutputStream(newFile.uri)?.use {
+            it.write(arSrtContent.toByteArray(Charsets.UTF_8))
+        } ?: return false
+
+        // Save preview so the app shows real subtitles, not just a filename
+        val previews = SrtParser.buildPreviews(blocks, translatedBlocks, PREVIEW_CUES)
+        savePreview(baseName, previews, blocks.size)
+
+        Log.i(TAG, "Wrote Arabic SRT as '${newFile.name}' (${blocks.size} cues)")
+        return true
     }
 
     /** Persist a small preview JSON for the in-app subtitle viewer. */

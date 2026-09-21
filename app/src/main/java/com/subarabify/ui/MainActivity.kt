@@ -104,6 +104,7 @@ fun SubArabifyApp() {
     var translationLog by remember { mutableStateOf(loadLog(context)) }
     var mediaItems by remember { mutableStateOf(loadMediaItems(context)) }
     var modelReady by remember { mutableStateOf(prefs(context).getBoolean("model_ready", false)) }
+    var sttReady by remember { mutableStateOf(prefs(context).getBoolean("stt_ready", false)) }
     var cachedLines by remember { mutableStateOf(prefs(context).getInt("last_cached_lines", 0)) }
     var previewFor by remember { mutableStateOf<String?>(null) }
     var previewData by remember { mutableStateOf<PreviewData?>(null) }
@@ -119,6 +120,7 @@ fun SubArabifyApp() {
             translationLog = loadLog(context)
             mediaItems = loadMediaItems(context)
             modelReady = prefs(context).getBoolean("model_ready", false)
+            sttReady = prefs(context).getBoolean("stt_ready", false)
             cachedLines = prefs(context).getInt("last_cached_lines", 0)
         }
     }
@@ -164,7 +166,7 @@ fun SubArabifyApp() {
 
             // ── On-device model status (small Arabic model, downloaded once) ──
             item {
-                ModelStatusCard(ready = modelReady, cachedLines = cachedLines)
+                ModelStatusCard(ready = modelReady, sttReady = sttReady, cachedLines = cachedLines)
             }
 
             // ── Monitoring toggle ──
@@ -280,7 +282,7 @@ fun SubArabifyApp() {
                 }
                 items(mediaItems.sortedBy {
                     when (it.status) {
-                        "pending" -> 0; "weak_source" -> 1; "translating" -> 2
+                        "pending" -> 0; "weak_source" -> 1; "translating" -> 2; "transcribing" -> 2
                         "error" -> 3; "done" -> 4; "skipped" -> 5; else -> 6
                     }
                 }) { media ->
@@ -441,7 +443,7 @@ fun HeroBanner() {
 
 // ─── On-device model status ─────────────────────────────────────────
 @Composable
-fun ModelStatusCard(ready: Boolean, cachedLines: Int) {
+fun ModelStatusCard(ready: Boolean, sttReady: Boolean, cachedLines: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -468,6 +470,13 @@ fun ModelStatusCard(ready: Boolean, cachedLines: Int) {
                 Text(
                     if (ready) "ML Kit EN→AR ready • $cachedLines lines memorized (no re-translate lag)"
                     else "First run needs internet once — then 100% offline",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextMuted,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    if (sttReady) "🎙️ STT model on-device — no-subtitle videos auto-transcribe"
+                    else "🎙️ STT model: auto-downloads when a video has no subtitles",
                     style = MaterialTheme.typography.labelSmall,
                     color = TextMuted,
                 )
@@ -516,7 +525,7 @@ fun SubtitlePreviewDialog(
                 Text(
                     when {
                         preview == null -> "No preview yet — run a scan first."
-                        preview.noSource -> "No English subtitle found. Put Movie.en.srt next to the video and tap Redo."
+                        preview.noSource -> "No subtitle file — the app will transcribe the English audio offline. Or put Movie.en.srt next to the video and tap Redo."
                         preview.weak -> "Source looks like a promo stub — preview shows the original."
                         else -> "${preview.total} cues • file: $title.SubArabify.ar.srt • timings unchanged"
                     },
@@ -835,6 +844,7 @@ fun MediaItemCard(
     val (statusColor, statusIcon) = when (item.status) {
         "done" -> SuccessGreen to Icons.Rounded.CheckCircle
         "translating" -> InfoCyan to Icons.Rounded.Sync
+        "transcribing" -> InfoCyan to Icons.Rounded.Mic
         "pending" -> WarnAmber to Icons.Rounded.HourglassTop
         "weak_source" -> WarnAmber to Icons.Rounded.Warning
         "skipped" -> TextMuted to Icons.Rounded.SkipNext
@@ -863,10 +873,11 @@ fun MediaItemCard(
                 Text(
                     when (item.status) {
                         "done" -> "✓ Arabic .srt ready — tap subtitles icon to preview"
-                        "pending" -> "No usable English .srt yet — tap to see help"
+                        "pending" -> "No subtitle file — will transcribe audio offline"
                         "weak_source" -> "English .srt too short (YTS promo?) — add a full .en.srt"
                         "skipped" -> "Manually skipped"
                         "translating" -> if (progress != null) "Translating… $progress lines" else "Translation in progress…"
+                        "transcribing" -> if (progress != null) "Transcribing audio… $progress%" else "Transcribing audio offline…"
                         "error" -> "Failed — tap redo"
                         else -> item.status
                     },
@@ -892,7 +903,7 @@ fun MediaItemCard(
                     )
                 }
             }
-            if (item.status != "done" && item.status != "translating") {
+            if (item.status != "done" && item.status != "translating" && item.status != "transcribing") {
                 IconButton(
                     onClick = { if (item.status == "skipped") onUnskip() else onSkip() },
                     modifier = Modifier.size(36.dp),
@@ -939,10 +950,10 @@ fun EmptyState() {
 @Composable
 fun LogEntryCard(entry: LogEntry) {
     val statusColor = when (entry.status) {
-        "success" -> SuccessGreen; "error" -> ErrorRose; else -> WarnAmber
+        "success", "stt_success" -> SuccessGreen; "error" -> ErrorRose; else -> WarnAmber
     }
     val statusIcon = when (entry.status) {
-        "success" -> Icons.Rounded.CheckCircle; "error" -> Icons.Rounded.Error; else -> Icons.Rounded.HourglassTop
+        "success", "stt_success" -> Icons.Rounded.CheckCircle; "error" -> Icons.Rounded.Error; else -> Icons.Rounded.HourglassTop
     }
 
     Card(
@@ -974,7 +985,7 @@ fun LogEntryCard(entry: LogEntry) {
                 color = statusColor.copy(alpha = 0.12f),
             ) {
                 Text(
-                    entry.status.replaceFirstChar { it.uppercase() },
+                    entry.status.replace("stt_success", "STT OK").replaceFirstChar { it.uppercase() },
                     style = MaterialTheme.typography.labelSmall,
                     color = statusColor,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -1013,11 +1024,13 @@ private fun runOneShot(
     forceRetranslate: Boolean,
     targetBase: String?,
     oneOnly: Boolean,
+    enableStt: Boolean = true,
 ) {
     val dataBuilder = androidx.work.Data.Builder()
         .putString("LIBRARY_FOLDER_URI", folderUri)
         .putBoolean("FORCE_RETRANSLATE", forceRetranslate)
         .putBoolean("ONE_ONLY", oneOnly)
+        .putBoolean("ENABLE_STT", enableStt)
     if (targetBase != null) {
         dataBuilder.putString("TARGET_BASE", targetBase)
     }

@@ -40,10 +40,12 @@ Built automatically on every push to `main` and published to GitHub Pages (same 
 1. **Select a folder** — Movies, Downloads, or any tree via Android Storage Access Framework
 2. **First run downloads the small Arabic model once** (ML Kit EN→AR) — then 100% offline
 3. **Translate** — scans for videos with a usable subtitle source (see resolver above)
-4. **Write on device** — saves `MovieName.SubArabify.ar.srt` next to the video so MX Player, VLC, and similar apps can load it
-5. **Preview in app** — tap any item's subtitles icon to see the result as normal subtitles
+4. **No subtitle? Transcribe** — the audio track is transcribed offline on-device (Vosk small-en, downloaded once), then translated like a normal subtitle
+5. **Write on device** — saves `MovieName.SubArabify.ar.srt` next to the video so MX Player, VLC, and similar apps can load it
+6. **Preview in app** — tap any item's subtitles icon to see the result as normal subtitles
 
-Videos with no subtitle source stay **pending** (the preview explains what to add).
+Videos where neither subtitles nor intelligible English speech are found stay
+**pending** (the preview explains what to add).
 Tiny promo files (e.g. YTS ads with only a few cues) are marked **weak source** —
 put a full `Movie.en.srt` beside the video and tap **Redo**.
 
@@ -65,6 +67,7 @@ put a full `Movie.en.srt` beside the video and tap **Redo**.
 | Feature | Reality |
 |---|---|
 | Offline translation | ML Kit EN→AR on device after the model downloads once |
+| Offline speech-to-text | Vosk small-en transcribes videos with no subtitles (beta, English audio) |
 | Translation memory | Repeated lines cached on disk across runs — no re-translate lag |
 | In-app preview | Cues rendered like a real player, AR/EN toggle |
 | Background scans | WorkManager at your interval (15 min – 6 hours) |
@@ -107,17 +110,19 @@ app/src/main/java/com/subarabify/
 ├── data/
 │   ├── SrtParser.kt          # Parse (SRT+VTT) + timing-safe branded builder + AR post-fix
 │   ├── TranslationMemory.kt  # Persistent EN→AR cache (kills re-translate lag)
+│   ├── AudioExtractor.kt     # Video audio → 16 kHz mono PCM stream (MediaCodec, no FFmpeg)
 │   └── StorageHelper.kt      # SAF helpers + smart/fuzzy source resolver
 ├── engine/
 │   ├── MlKitTranslator.kt    # Chunked offline EN→AR (glossary → memory → model)
-│   └── WhisperEngine.kt      # Transcription stub (not active yet)
+│   └── SttEngine.kt          # Offline English STT (Vosk) with word-timestamp cues
 ├── ui/
-│   └── MainActivity.kt       # Folder pick, monitoring, model card, subtitle preview
+│   └── MainActivity.kt       # Folder pick, monitoring, model cards, subtitle preview
 └── worker/
-    └── SubArabifyWorker.kt   # Folder scan → translate → write .srt + save preview
+    └── SubArabifyWorker.kt   # Folder scan → translate / transcribe → write .srt + preview
 jellyfin-addon/
-├── subarabify_jellyfin.py    # Server/Termux addon (model download → scan → write)
+├── subarabify_jellyfin.py    # Server/Termux addon (model download → scan → write, --stt fallback)
 ├── srtcore.py                # Same SRT rules as SrtParser.kt (parity)
+├── stt.py                    # Server STT fallback (ffmpeg + faster-whisper)
 └── manifest.json             # Jellyfin plugin-repository manifest (1.0.3-beta)
 ```
 

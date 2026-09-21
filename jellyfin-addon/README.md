@@ -73,8 +73,9 @@ you icon + version/discovery while enabling = running the companion above.
 
 | File | Purpose |
 |---|---|
-| `subarabify_jellyfin.py` | the addon: model download → scan → translate → write |
+| `subarabify_jellyfin.py` | the addon: model download → scan → translate → write (`--stt` = transcribe when no subs) |
 | `srtcore.py` | SRT/VTT parse + timing-safe branding (parity with the Android `SrtParser`) |
+| `stt.py` | offline STT fallback (ffmpeg + faster-whisper, word-timestamp cues) |
 | `requirements.txt` | transformers + torch CPU + helpers |
 | `manifest.json` | Jellyfin plugin-repository manifest (1.0.3-beta) |
 | `run-termux.sh` | Android Termux installer/runner |
@@ -88,8 +89,24 @@ you icon + version/discovery while enabling = running the companion above.
 --watch            rescan every --interval minutes
 --interval N       watch interval in minutes (default 60)
 --force            retranslate even if output exists
+--stt              transcribe English audio offline (faster-whisper) when no
+                   subtitle file exists — WhisperSubs-style fallback
 --jellyfin-refresh trigger Jellyfin library refresh (needs JELLYFIN_URL + JELLYFIN_API_KEY)
 ```
 
 Env: `SUBARABIFY_MODEL` (default `Helsinki-NLP/opus-mt-en-ar`),
-`SUBARABIFY_MEDIA_DIR`, `SUBARABIFY_CACHE`.
+`SUBARABIFY_MEDIA_DIR`, `SUBARABIFY_CACHE`, `SUBARABIFY_STT=1` (same as `--stt`),
+`SUBARABIFY_STT_MODEL` (default `tiny.en`; `base.en`/`small.en` = slower, more accurate).
+
+## Speech-to-text fallback (WhisperSubs-style)
+
+No subtitle file at all? With `--stt`, the addon extracts the audio track
+(ffmpeg — Jellyfin's bundled one at `/usr/lib/jellyfin-ffmpeg/ffmpeg` is used
+first) and transcribes **English** speech locally with faster-whisper
+(`tiny.en`, CPU int8, downloaded once into `<cache>/models-stt`). Word
+timestamps become real cue timings, then the normal EN→AR translation runs and
+the same branded `*.SubArabify.ar.srt` is written. Videos where almost nothing
+is heard stay `pending`. Like WhisperSubs: self-hosted, repeat runs skip
+unchanged items (translation memory + existing-output check), media never
+leaves your server. Non-English audio is not transcribed well yet (tiny.en is
+English-only) — that case stays `pending`.

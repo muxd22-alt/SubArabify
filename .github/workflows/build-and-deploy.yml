@@ -39,7 +39,9 @@ jobs:
             -x 'jellyfin-addon/.cache/*' 'jellyfin-addon/__pycache__/*'
 
       - name: Self-test Jellyfin addon core
-        run: python3 jellyfin-addon/test_srtcore.py
+        run: |
+          python3 jellyfin-addon/test_srtcore.py
+          python3 jellyfin-addon/test_stt.py
 
       - name: Publish Jellyfin repository manifest (real checksum + timestamp)
         run: |
