@@ -76,6 +76,8 @@ you icon + version/discovery while enabling = running the companion above.
 | `subarabify_jellyfin.py` | the addon: model download → scan → translate → write (`--stt` = transcribe when no subs) |
 | `srtcore.py` | SRT/VTT parse + timing-safe branding (parity with the Android `SrtParser`) |
 | `stt.py` | offline STT fallback (ffmpeg + faster-whisper, word-timestamp cues) |
+| `whisper_cpp.py` | whisper.cpp wrapper (16kHz WAV extraction -> `whisper-cli` JSON transcription) |
+| `llm_translator.py` | llama.cpp / Qwen 2.5 1.5B (GGUF Q4_K_M) batch subtitle translation module |
 | `requirements.txt` | transformers + torch CPU + helpers |
 | `manifest.json` | Jellyfin plugin-repository manifest (1.0.3-beta) |
 | `run-termux.sh` | Android Termux installer/runner |
