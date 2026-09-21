@@ -139,7 +139,7 @@ class MlKitTranslator(
             b.textLines.forEachIndexed { li, raw ->
                 val clean = SrtParser.stripMarkup(raw)
                 if (clean.isEmpty()) {
-                    jobs.add(TranslationJob(bi, li, "", ""))
+                    jobs.add(TranslationJob(bi, li, "", "", false))
                 } else {
                     val (prefix, core) = SrtParser.splitPrefix(clean)
                     jobs.add(TranslationJob(bi, li, prefix, core, SrtParser.isSoundCue(clean)))

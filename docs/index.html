@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SubArabify — Arabic subtitles on your device</title>
-  <meta name="description" content="Pick a folder. Translate English .srt files to Arabic on-device. Get MovieName.SubArabify.ar.srt next to your videos — no cloud." />
+  <title>SubArabify — Automatic Arabic subtitles, on-device</title>
+  <meta name="description" content="Pick a folder. SubArabify translates English subtitles to Arabic on-device and writes MovieName.SubArabify.ar.srt beside your videos. Offline, private, timing-safe. v1.0.3-beta." />
+  <meta property="og:title" content="SubArabify — Automatic Arabic subtitles" />
+  <meta property="og:description" content="On-device EN→AR subtitles. Preview like a player. Jellyfin addon for servers + Termux." />
+  <meta property="og:image" content="icon.jpg" />
   <link rel="icon" href="icon.jpg" />
   <link rel="apple-touch-icon" href="icon.jpg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -16,12 +19,16 @@
     :root {
       --ink: #0c1218;
       --ink-soft: #15202b;
+      --card: #141e29;
+      --card-hi: #1a2634;
       --line: #2a3a4a;
       --gold: #e8a317;
       --gold-deep: #c4890e;
+      --gold-soft: rgba(232, 163, 23, 0.12);
       --sand: #e8eef4;
       --muted: #8fa3b5;
       --ok: #3ecf8e;
+      --radius: 20px;
     }
 
     html { scroll-behavior: smooth; }
@@ -38,104 +45,224 @@
     }
 
     .wrap {
-      max-width: 680px;
+      max-width: 720px;
       margin: 0 auto;
       padding: 28px 22px 72px;
     }
 
-    /* ── Brand bar ── */
+    /* ── Top nav ── */
     .brand-bar {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       justify-content: space-between;
       gap: 16px;
-      margin-bottom: 48px;
+      margin-bottom: 20px;
       animation: rise 0.7s ease both;
     }
     .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       font-family: Syne, sans-serif;
       font-weight: 800;
-      font-size: clamp(1.85rem, 5vw, 2.35rem);
+      font-size: clamp(1.5rem, 5vw, 1.9rem);
       letter-spacing: -0.04em;
       line-height: 1;
     }
-    .brand em {
-      font-style: normal;
-      color: var(--gold);
+    .brand img {
+      width: 46px;
+      height: 46px;
+      border-radius: 13px;
+      box-shadow: 0 6px 24px rgba(232, 163, 23, 0.25);
     }
+    .brand em { font-style: normal; color: var(--gold); }
     .ver {
       font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
+      font-weight: 700;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--muted);
-      border-bottom: 1px solid var(--line);
-      padding-bottom: 2px;
+      color: var(--ink);
+      background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+      padding: 5px 12px;
+      border-radius: 999px;
+      white-space: nowrap;
     }
+    nav.links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 18px;
+      margin-bottom: 44px;
+      animation: rise 0.7s 0.05s ease both;
+    }
+    nav.links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    nav.links a:hover { color: var(--gold); }
 
-    /* ── Hero: one composition ── */
+    /* ── Hero ── */
     .hero {
-      margin-bottom: 56px;
+      text-align: center;
+      margin-bottom: 40px;
       animation: rise 0.8s 0.08s ease both;
+    }
+    .hero img.logo {
+      width: 120px;
+      height: 120px;
+      border-radius: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 18px 60px rgba(232, 163, 23, 0.3), 0 4px 16px rgba(0, 0, 0, 0.5);
     }
     .hero h1 {
       font-family: Syne, sans-serif;
       font-weight: 700;
-      font-size: clamp(1.35rem, 3.8vw, 1.75rem);
+      font-size: clamp(1.5rem, 4.4vw, 2rem);
       letter-spacing: -0.03em;
-      max-width: 18ch;
-      margin-bottom: 14px;
-      color: var(--sand);
+      max-width: 22ch;
+      margin: 0 auto 14px;
     }
+    .hero h1 .ar { color: var(--gold); }
     .hero p {
       color: var(--muted);
       font-size: 1.02rem;
-      max-width: 38ch;
-      margin-bottom: 28px;
+      max-width: 44ch;
+      margin: 0 auto 28px;
     }
     .cta-row {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
+      justify-content: center;
       gap: 14px 20px;
     }
     .cta {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 14px 26px;
+      padding: 15px 30px;
       background: linear-gradient(135deg, var(--gold), var(--gold-deep));
       color: var(--ink);
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 1rem;
       text-decoration: none;
       border: none;
-      clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(232, 163, 23, 0.35);
       transition: transform 0.2s ease, filter 0.2s ease;
     }
-    .cta:hover { transform: translateY(-2px); filter: brightness(1.06); }
+    .cta:hover { transform: translateY(-2px); filter: brightness(1.07); }
     .cta svg { width: 18px; height: 18px; }
+    .cta.ghost {
+      background: transparent;
+      color: var(--sand);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
     .cta-meta {
+      width: 100%;
       font-size: 0.8rem;
       color: var(--muted);
     }
     .cta-meta a { color: var(--gold); text-decoration: none; }
     .cta-meta a:hover { text-decoration: underline; }
 
-    /* ── Truth strip ── */
-    .truth {
-      display: grid;
-      gap: 0;
-      margin-bottom: 52px;
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      animation: rise 0.85s 0.14s ease both;
+    /* ── Player demo: subtitles like a normal player ── */
+    .demo {
+      margin-bottom: 48px;
+      animation: rise 0.85s 0.12s ease both;
     }
+    .demo-label {
+      text-align: center;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .player {
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #000;
+    }
+    .player .screen {
+      position: relative;
+      aspect-ratio: 16 / 7;
+      background:
+        radial-gradient(ellipse 70% 90% at 50% 110%, rgba(232, 163, 23, 0.22), transparent 60%),
+        linear-gradient(180deg, #0b1220 0%, #05080e 100%);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 22px;
+    }
+    .player .cue {
+      background: rgba(0, 0, 0, 0.78);
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: 600;
+      padding: 10px 22px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 86%;
+    }
+    .player .bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--ink-soft);
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .player .bar .track {
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--line);
+      position: relative;
+    }
+    .player .bar .track::after {
+      content: "";
+      position: absolute;
+      inset: 0 62% 0 0;
+      border-radius: 2px;
+      background: var(--gold);
+    }
+
+    /* ── Cards & sections ── */
+    section.card {
+      background: linear-gradient(180deg, var(--card), var(--card-hi));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 26px 24px;
+      margin-bottom: 22px;
+      animation: rise 0.9s 0.16s ease both;
+    }
+    section.card h2 {
+      font-family: Syne, sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    section.card > p.sub {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      max-width: 46ch;
+    }
+
+    /* truth strip */
+    .truth { display: grid; }
     .truth-item {
       display: grid;
       grid-template-columns: 88px 1fr;
       gap: 16px;
-      padding: 18px 0;
+      padding: 16px 0;
       border-bottom: 1px solid var(--line);
     }
     .truth-item:last-child { border-bottom: none; }
@@ -148,39 +275,29 @@
       color: var(--gold);
       padding-top: 3px;
     }
-    .truth-item p {
-      font-size: 0.92rem;
-      color: var(--sand);
-    }
+    .truth-item p { font-size: 0.92rem; }
     .truth-item p span { color: var(--muted); }
 
-    /* ── Flow ── */
-    .flow { margin-bottom: 52px; animation: rise 0.9s 0.2s ease both; }
-    .flow h2, .branding h2 {
-      font-family: Syne, sans-serif;
-      font-size: 1.15rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 8px;
-    }
-    .flow > p, .branding > p {
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-bottom: 22px;
-      max-width: 42ch;
-    }
-    .steps {
-      counter-reset: step;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-    .step {
+    /* feature grid */
+    .grid {
       display: grid;
-      grid-template-columns: 40px 1fr;
-      gap: 14px;
-      align-items: start;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
+    @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+    .feat {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px 15px;
+    }
+    .feat .ico { font-size: 1.25rem; }
+    .feat strong { display: block; font-size: 0.9rem; margin: 6px 0 2px; }
+    .feat span { font-size: 0.8rem; color: var(--muted); }
+
+    /* steps */
+    .steps { counter-reset: step; display: flex; flex-direction: column; gap: 20px; }
+    .step { display: grid; grid-template-columns: 40px 1fr; gap: 14px; align-items: start; }
     .step::before {
       counter-increment: step;
       content: counter(step);
@@ -194,88 +311,72 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 10px;
     }
-    .step h3 {
-      font-size: 0.98rem;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    .step p {
-      font-size: 0.86rem;
-      color: var(--muted);
-    }
-    .step code {
+    .step h3 { font-size: 0.98rem; font-weight: 600; margin-bottom: 4px; }
+    .step p { font-size: 0.86rem; color: var(--muted); }
+
+    code, .codebox {
       font-family: ui-monospace, "Cascadia Code", monospace;
       font-size: 0.8em;
+    }
+    .step code, .truth code {
       color: var(--ok);
       background: rgba(62, 207, 142, 0.08);
       padding: 1px 6px;
+      border-radius: 6px;
     }
-
-    /* ── Branding rules ── */
-    .branding {
-      margin-bottom: 52px;
-      animation: rise 0.95s 0.26s ease both;
+    .codebox {
+      position: relative;
+      background: #0a0f16;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 10px;
+      font-size: 0.78rem;
+      color: var(--sand);
+      word-break: break-all;
+      line-height: 1.6;
     }
-    .rules {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px 24px;
-    }
-    @media (max-width: 520px) { .rules { grid-template-columns: 1fr; } }
-    .rule strong {
-      display: block;
-      font-size: 0.88rem;
+    .codebox .gold { color: var(--gold); }
+    .copybtn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--gold-soft);
+      color: var(--gold);
+      border: 1px solid rgba(232, 163, 23, 0.35);
+      border-radius: 8px;
+      font-size: 0.7rem;
       font-weight: 600;
-      margin-bottom: 2px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-family: inherit;
     }
-    .rule span {
-      font-size: 0.82rem;
-      color: var(--muted);
-    }
+    .copybtn:hover { background: rgba(232, 163, 23, 0.22); }
+
+    /* branding rules */
+    .rules { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; }
+    @media (max-width: 520px) { .rules { grid-template-columns: 1fr; } }
+    .rule strong { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 2px; }
+    .rule span { font-size: 0.82rem; color: var(--muted); }
     .rule.free strong { color: var(--ok); }
 
-    /* ── Honest limits ── */
-    .limits {
-      padding: 20px 0 0;
-      border-top: 1px solid var(--line);
-      margin-bottom: 40px;
-      animation: rise 1s 0.3s ease both;
-    }
-    .limits h2 {
-      font-family: Syne, sans-serif;
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .limits ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .limits li {
-      font-size: 0.86rem;
-      color: var(--muted);
-      padding-left: 14px;
-      position: relative;
-    }
-    .limits li::before {
-      content: "–";
-      position: absolute;
-      left: 0;
-      color: var(--gold);
-    }
+    /* limits */
+    .limits ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .limits li { font-size: 0.86rem; color: var(--muted); padding-left: 14px; position: relative; }
+    .limits li::before { content: "–"; position: absolute; left: 0; color: var(--gold); }
 
     footer {
       font-size: 0.78rem;
       color: var(--muted);
+      text-align: center;
       animation: rise 1s 0.34s ease both;
     }
     footer a { color: var(--gold); text-decoration: none; }
     footer a:hover { text-decoration: underline; }
+    footer img { width: 26px; height: 26px; border-radius: 8px; vertical-align: -7px; margin-right: 6px; }
 
-    /* thinker easter egg — visible only if you inspect / select-all */
     .thinker {
       position: absolute;
       width: 1px;
@@ -296,76 +397,111 @@
 
   <div class="wrap">
     <header class="brand-bar">
-      <div class="brand"><img src="icon.jpg" alt="SubArabify icon" style="width:44px;height:44px;border-radius:12px;vertical-align:-12px;margin-right:10px;" />Sub<em>Arabify</em></div>
+      <div class="brand"><img src="icon.jpg" alt="SubArabify icon" />Sub<em>Arabify</em></div>
       <div class="ver">v1.0.3 · beta</div>
     </header>
 
-    <section class="hero">
-      <h1>Select a folder. Translate on the phone. Preview like a player.</h1>
+    <nav class="links" aria-label="Sections">
+      <a href="#download">Download</a>
+      <a href="#how">How it works</a>
+      <a href="#new">What's new</a>
+      <a href="#jellyfin">Jellyfin addon</a>
+      <a href="https://github.com/muxd22-alt/SubArabify">GitHub</a>
+    </nav>
+
+    <section class="hero" id="download">
+      <img class="logo" src="icon.jpg" alt="SubArabify — EN to عربي subtitles icon" />
+      <h1>English subtitles in. <span class="ar">Arabic subtitles</span> out.</h1>
       <p>
-        English subtitles become Arabic beside your videos — offline, with a
-        persistent memory so re-runs don't lag. Tap any item to preview cues
-        as normal subtitles.
+        Pick a folder — SubArabify translates on the phone, offline, and drops a
+        timing-safe <bdi>MovieName.SubArabify.ar.srt</bdi> beside each video.
+        Preview cues like a normal player. No account. No upload.
       </p>
       <div class="cta-row">
         <a class="cta" href="SubArabify-latest.apk" download>
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 20h14v-2H5v2zm7-18L5.33 9h3.84v4h3.66V9h3.84L12 2z"/></svg>
           Download APK
         </a>
+        <a class="cta ghost" href="#jellyfin">Jellyfin addon</a>
         <p class="cta-meta">
-          ~29&nbsp;MB · Android · built on GitHub Pages<br />
+          v1.0.3-beta · Android · built on every push to <code>main</code><br />
           <a href="https://github.com/muxd22-alt/SubArabify">Source on GitHub</a>
         </p>
       </div>
     </section>
 
-    <section class="truth" aria-label="What you get">
-      <div class="truth-item">
-        <div class="truth-label">Input</div>
-        <p>A folder of videos that already have English <code style="color:var(--ok)">.srt</code> files <span>(same name, or .en / .eng / .English)</span></p>
+    <div class="demo" aria-label="Subtitle preview demo">
+      <div class="demo-label">In-app preview — cues rendered like a normal player</div>
+      <div class="player">
+        <div class="screen"><div class="cue" dir="rtl">هيا بنا!</div></div>
+        <div class="bar"><span>00:01:12,400</span><div class="track"></div><span>AR · SubArabify</span></div>
       </div>
-      <div class="truth-item">
-        <div class="truth-label">Process</div>
-        <p>On-device EN→AR in context chunks, with translation memory. Background scans optional. <span>Nothing leaves the phone.</span></p>
-      </div>
-      <div class="truth-item">
-        <div class="truth-label">Output</div>
-        <p><code style="color:var(--ok)">MovieName.SubArabify.ar.srt</code> next to the video — timings bit-identical, ready for MX Player, VLC, and friends</p>
-      </div>
-      <div class="truth-item">
-        <div class="truth-label">Preview</div>
-        <p>In-app subtitle viewer — cues rendered like a normal player, <span>Arabic / English toggle included.</span></p>
+    </div>
+
+    <section class="card" aria-label="What you get">
+      <h2>What you get</h2>
+      <p class="sub">Folder in, Arabic subtitles out — with the app name on it, sync untouched.</p>
+      <div class="truth">
+        <div class="truth-item">
+          <div class="truth-label">Input</div>
+          <p>A folder of videos with subtitle sources <span>(exact .en.srt, fuzzy matches, even .vtt)</span></p>
+        </div>
+        <div class="truth-item">
+          <div class="truth-label">Process</div>
+          <p>On-device EN→AR in context chunks + translation memory. <span>Nothing leaves the phone.</span></p>
+        </div>
+        <div class="truth-item">
+          <div class="truth-label">Output</div>
+          <p><code>MovieName.SubArabify.ar.srt</code> next to the video — timings bit-identical, ready for MX Player, VLC, and friends</p>
+        </div>
+        <div class="truth-item">
+          <div class="truth-label">Preview</div>
+          <p>Tap any item in the app to see cues as normal subtitles <span>(Arabic / English toggle).</span></p>
+        </div>
       </div>
     </section>
 
-    <section class="flow">
+    <section class="card" id="new">
+      <h2>New in v1.0.3-beta</h2>
+      <p class="sub">Smarter translation, zero re-run lag, and something real to look at.</p>
+      <div class="grid">
+        <div class="feat"><div class="ico">🧠</div><strong>Context translation</strong><span>Speaker labels shielded, cues batched, glossary + Arabic punctuation fix.</span></div>
+        <div class="feat"><div class="ico">⚡</div><strong>No lag between runs</strong><span>~10 model calls per movie + on-disk memory for repeats.</span></div>
+        <div class="feat"><div class="ico">🎬</div><strong>Subtitle preview</strong><span>Cues rendered like a real player, AR/EN toggle, timings shown.</span></div>
+        <div class="feat"><div class="ico">🔍</div><strong>Finds more sources</strong><span>Fuzzy base match, any-language fallback, .vtt input.</span></div>
+        <div class="feat"><div class="ico">⏱️</div><strong>Sync-safe brand</strong><span>Brand cues only in free gaps — dialogue timings never touched.</span></div>
+        <div class="feat"><div class="ico">📺</div><strong>Jellyfin addon</strong><span>Same engine on servers + Android Termux. See below.</span></div>
+      </div>
+    </section>
+
+    <section class="card" id="how">
       <h2>How it works</h2>
-      <p>Three steps. No cloud pipeline.</p>
+      <p class="sub">Three steps. No cloud pipeline.</p>
       <div class="steps">
         <div class="step">
           <div>
             <h3>Pick your library folder</h3>
-            <p>Grant access once via Android’s folder picker. Movies, TV, Downloads — any tree.</p>
+            <p>Grant access once via Android's folder picker. Movies, TV, Downloads — any tree. The small Arabic model downloads once, then everything is offline.</p>
           </div>
         </div>
         <div class="step">
           <div>
             <h3>Translate (now or on a schedule)</h3>
-            <p>Run a scan or leave monitoring on. SubArabify finds English subs and translates them offline.</p>
+            <p>Run a scan or leave monitoring on. SubArabify finds subtitle sources and translates them with memory — re-scans don't re-translate.</p>
           </div>
         </div>
         <div class="step">
           <div>
-            <h3>Use the .srt on device</h3>
-            <p>Open the video in your player. Load <code>*.SubArabify.ar.srt</code> — or let the player auto-pick it by name.</p>
+            <h3>Preview &amp; play</h3>
+            <p>Check the result inside the app as normal subtitles, then open the video in your player — <code>*.SubArabify.ar.srt</code> loads by name.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="branding">
+    <section class="card">
       <h2>Subtitle signature</h2>
-      <p>Visible where it belongs. Quiet where it doesn't. Timings never touched.</p>
+      <p class="sub">Visible where it belongs. Quiet where it doesn't. Timings never touched.</p>
       <div class="rules">
         <div class="rule">
           <strong>Start</strong>
@@ -377,7 +513,7 @@
         </div>
         <div class="rule">
           <strong>End</strong>
-          <span>Short SubArabify cue after the last line</span>
+          <span>Short SubArabify cue ~1.5 s after the last line</span>
         </div>
         <div class="rule">
           <strong>Filename</strong>
@@ -386,49 +522,76 @@
       </div>
     </section>
 
-    <section class="limits">
-      <h2>Be clear about limits</h2>
-      <ul>
-        <li>Needs an existing subtitle source (any `.srt`/`.vtt` — fuzzy-matched, any language falls back gracefully) — speech-to-text from video audio is not ready yet</li>
-        <li>ML Kit model downloads once (needs network that first time), then works offline; repeated lines served from on-disk memory</li>
-        <li>Current APK is a debug-signed beta from CI, not a Play Store build</li>
-      </ul>
-    </section>
-
-    <section class="flow">
-      <h2>Jellyfin addon — same engine, on your server</h2>
-      <p>Runs natively on a normal media server and on Android via Termux. Downloads the small Arabic model once, then writes <code>*.SubArabify.ar.srt</code> with untouched timings.</p>
-      <p style="margin-bottom:22px;font-size:0.86rem;color:var(--muted);">Jellyfin → Dashboard → Plugins → Repositories → New Repository — paste this manifest URL (a <code>github.com/.../tree/...</code> page link will not load):<br /><code style="color:var(--ok);font-size:0.82rem;word-break:break-all;">https://muxd22-alt.github.io/SubArabify/jellyfin-manifest.json</code></p>
+    <section class="card" id="jellyfin">
+      <h2>📺 Jellyfin addon — same engine, on your server</h2>
+      <p class="sub">Native Python companion: normal media servers <b>and</b> Android via Termux (no .NET needed). Downloads the small Arabic model once, then writes <code>*.SubArabify.ar.srt</code> with untouched timings.</p>
       <div class="steps">
         <div class="step">
           <div>
-            <h3>Termux (Android)</h3>
-            <p><code>bash jellyfin-addon/run-termux.sh ~/storage/movies</code> — model downloads on enable, then a full scan.</p>
+            <h3>1 · Register the repository</h3>
+            <p>Jellyfin → Dashboard → Plugins → Repositories → New Repository. Paste the manifest URL (a <code>github.com/…/tree/…</code> page link will not load):</p>
+            <div class="codebox"><button class="copybtn" data-copy="https://muxd22-alt.github.io/SubArabify/jellyfin-manifest.json">Copy</button><span class="gold">https://muxd22-alt.github.io/SubArabify/jellyfin-manifest.json</span></div>
           </div>
         </div>
         <div class="step">
           <div>
-            <h3>Normal server</h3>
-            <p><code>pip install -r jellyfin-addon/requirements.txt</code>, then <code>python jellyfin-addon/subarabify_jellyfin.py --media /media --watch</code>. Systemd unit included.</p>
+            <h3>2 · Enable on Termux (Android)</h3>
+            <p>One command — model downloads on enable, then a full scan:</p>
+            <div class="codebox"><button class="copybtn" data-copy="bash jellyfin-addon/run-termux.sh ~/storage/movies">Copy</button>bash jellyfin-addon/run-termux.sh ~/storage/movies</div>
           </div>
         </div>
         <div class="step">
           <div>
-            <h3>Details</h3>
-            <p>Full usage in <code>jellyfin-addon/README.md</code> — manifest v1.0.3-beta, same timing-safe branding as the app.</p>
+            <h3>3 · Or enable on a normal server</h3>
+            <div class="codebox"><button class="copybtn" data-copy="python jellyfin-addon/subarabify_jellyfin.py --media /media --watch">Copy</button>pip install -r jellyfin-addon/requirements.txt<br />python jellyfin-addon/subarabify_jellyfin.py --media /media --watch</div>
+            <p style="margin-top:10px;">Full usage in <code>jellyfin-addon/README.md</code> — systemd unit included. The catalog entry carries the SubArabify icon + version; enabling happens via the companion because Jellyfin can only Install .NET plugins.</p>
           </div>
         </div>
       </div>
     </section>
 
+    <section class="card limits">
+      <h2>Be clear about limits</h2>
+      <p class="sub">Honest beta notes.</p>
+      <ul>
+        <li>Needs an existing subtitle source (any <code>.srt</code>/<code>.vtt</code>, fuzzy-matched) — speech-to-text from audio is not ready yet</li>
+        <li>Model downloads once (needs network that first time), then 100% offline; repeats served from memory</li>
+        <li>Current APK is a debug-signed beta from CI, not a Play Store build</li>
+      </ul>
+    </section>
+
     <footer>
       <p>
-        SubArabify &copy; 2026 · on-device, open source<br />
+        <img src="icon.jpg" alt="" />SubArabify v1.0.3-beta · on-device, open source<br />
         <a href="https://github.com/muxd22-alt/SubArabify">github.com/muxd22-alt/SubArabify</a>
         ·
         <a href="SubArabify-latest.apk" download>Direct APK</a>
       </p>
     </footer>
   </div>
+
+  <script>
+    document.querySelectorAll('.copybtn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var text = btn.getAttribute('data-copy');
+        function done() {
+          var old = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(function () { btn.textContent = old; }, 1400);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, done);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          done();
+        }
+      });
+    });
+  </script>
 </body>
 </html>
