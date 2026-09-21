@@ -8,9 +8,19 @@ data class SrtBlock(
 
 object SrtParser {
 
-    // ── Two-tone HTML branding line (supported by most SRT renderers) ──
+    // ── Two-tone HTML branding (most SRT players render <font color>) ──
     private const val BRAND_LINE =
         "<font color=\"#F1F5F9\">Sub</font><font color=\"#F0A500\">Arabify</font>"
+
+    /**
+     * Invisible-to-players preamble. Numbered cues start after this.
+     * Anyone who opens the .srt in a text editor will find it.
+     */
+    private const val THINKER_NOTE = """NOTE
+SubArabify · for thinkers
+We mark the edges. The middle stays free — your dialogue, uninterrupted.
+If you are reading this, you already know why the filename says SubArabify.
+"""
 
     fun parse(srtContent: String): List<SrtBlock> {
         val blocks = mutableListOf<SrtBlock>()
@@ -38,16 +48,17 @@ object SrtParser {
     }
 
     /**
-     * Builds the final .SubArabify.ar.srt content with:
-     *  • Translated text lines wrapped in Thmanyah Sans font tags
-     *  • Two-tone SubArabify branding at first 10s, a middle gap, and last 10s
+     * Builds device-ready `.SubArabify.ar.srt` content:
+     *  • Opening brand near the start (first window)
+     *  • Free middle — translated dialogue only, no watermarks
+     *  • Closing brand after the last cue
+     *  • Hidden NOTE at the top for anyone who opens the file
      */
     fun buildBrandedSrt(
         blocks: List<SrtBlock>,
         translatedTexts: List<List<String>>,
     ): String {
 
-        // 1 ── Build core translated blocks ──
         val coreBlocks = mutableListOf<SrtBlock>()
         for ((idx, block) in blocks.withIndex()) {
             val translated = translatedTexts.getOrNull(idx) ?: block.textLines
@@ -57,42 +68,15 @@ object SrtParser {
             coreBlocks.add(SrtBlock(block.index, block.timecode, styledLines))
         }
 
-        // 2 ── Insert branding blocks ──
         val branded = mutableListOf<SrtBlock>()
 
-        // — Opening brand (first 10 seconds) —
-        branded.add(
-            SrtBlock("0", "00:00:02,000 --> 00:00:08,000", listOf(BRAND_LINE))
-        )
+        // — Opening brand (first ~6s window, avoid covering first dialogue when possible) —
+        branded.add(SrtBlock("0", openingBrandTimecode(coreBlocks), listOf(BRAND_LINE)))
 
-        // — Core content —
+        // — Core content: middle stays free —
         branded.addAll(coreBlocks)
 
-        // — Middle brand (find a mid-point gap) —
-        if (coreBlocks.size >= 4) {
-            val midIdx = coreBlocks.size / 2
-            val beforeEnd = parseEndMs(coreBlocks[midIdx - 1].timecode)
-            val afterStart = parseStartMs(coreBlocks[midIdx].timecode)
-            if (afterStart - beforeEnd > 1500) {
-                // There is a gap — insert brand there
-                val gapStart = beforeEnd + 200
-                val gapEnd = afterStart - 200
-                branded.add(
-                    midIdx + 1, // +1 because of the opening brand we already added
-                    SrtBlock("0", "${msToTimecode(gapStart)} --> ${msToTimecode(gapEnd)}", listOf(BRAND_LINE))
-                )
-            } else {
-                // No gap — overlay briefly after mid block ends
-                val overlayStart = beforeEnd + 100
-                val overlayEnd = overlayStart + 3000
-                branded.add(
-                    midIdx + 1,
-                    SrtBlock("0", "${msToTimecode(overlayStart)} --> ${msToTimecode(overlayEnd)}", listOf(BRAND_LINE))
-                )
-            }
-        }
-
-        // — Closing brand (last 10 seconds) —
+        // — Closing brand (after last cue) —
         if (coreBlocks.isNotEmpty()) {
             val lastEnd = parseEndMs(coreBlocks.last().timecode)
             val closingStart = lastEnd + 1000
@@ -102,8 +86,9 @@ object SrtParser {
             )
         }
 
-        // 3 ── Re-index and serialize ──
         val sb = StringBuilder()
+        sb.append(THINKER_NOTE).append("\n")
+
         for ((i, block) in branded.withIndex()) {
             sb.append(i + 1).append("\n")
             sb.append(block.timecode).append("\n")
@@ -113,6 +98,25 @@ object SrtParser {
         return sb.toString()
     }
 
+    /** Prefer a gap before the first cue; otherwise a short early overlay. */
+    private fun openingBrandTimecode(coreBlocks: List<SrtBlock>): String {
+        val firstStart = if (coreBlocks.isNotEmpty()) {
+            parseStartMs(coreBlocks.first().timecode)
+        } else {
+            10_000L
+        }
+
+        return if (firstStart >= 8_500L) {
+            "00:00:02,000 --> 00:00:08,000"
+        } else if (firstStart >= 3_000L) {
+            val end = firstStart - 400
+            "00:00:00,500 --> ${msToTimecode(end)}"
+        } else {
+            // Dialogue starts early — brief brand that most players clear for speech
+            "00:00:00,200 --> 00:00:02,000"
+        }
+    }
+
     /** Legacy non-branded builder (kept for compatibility) */
     fun buildSrt(blocks: List<SrtBlock>, translatedTexts: List<List<String>>): String {
         return buildBrandedSrt(blocks, translatedTexts)
@@ -120,20 +124,17 @@ object SrtParser {
 
     // ── Timecode helpers ──────────────────────────────────────────
 
-    /** Parse "00:01:23,456 --> 00:01:27,890" → start millis */
     private fun parseStartMs(timecode: String): Long {
         val start = timecode.split("-->").getOrNull(0)?.trim() ?: return 0L
         return timecodeToMs(start)
     }
 
-    /** Parse "00:01:23,456 --> 00:01:27,890" → end millis */
     private fun parseEndMs(timecode: String): Long {
         val end = timecode.split("-->").getOrNull(1)?.trim() ?: return 0L
         return timecodeToMs(end)
     }
 
     private fun timecodeToMs(tc: String): Long {
-        // "00:01:23,456"
         val parts = tc.replace(",", ":").split(":")
         if (parts.size < 4) return 0L
         val h = parts[0].toLongOrNull() ?: 0L

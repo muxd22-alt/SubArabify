@@ -165,7 +165,7 @@ class SubArabifyWorker(
                 translatedBlocks.add(translatedLines)
             }
 
-            // Build branded SRT with SubArabify watermarks
+            // Start + end brand, free middle, filename carries SubArabify
             val arSrtContent = SrtParser.buildBrandedSrt(blocks, translatedBlocks)
 
             val newFile = parentFolder.createFile("application/x-subrip", brandedSrtName)
