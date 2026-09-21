@@ -67,7 +67,7 @@ private fun statusPrefs(ctx: Context) =
 // ─── Data models ────────────────────────────────────────────────────
 data class LogEntry(val fileName: String, val status: String, val timestamp: String)
 
-data class MediaItem(val name: String, val status: String) // done, pending, skipped, error, translating
+data class MediaItem(val name: String, val status: String) // done, pending, skipped, error, translating, weak_source
 
 // ─── Root composable ────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
@@ -167,10 +167,48 @@ fun SubArabifyApp() {
                 )
             }
 
+            // ── Actions: Scan Now / Next ──
+            if (selectedFolderUri != null) {
+                item {
+                    val nextPending = mediaItems.firstOrNull {
+                        it.status == "pending" || it.status == "error"
+                    }
+                    ActionRow(
+                        onScanNow = {
+                            runOneShot(
+                                context, selectedFolderUri!!,
+                                forceRetranslate = false,
+                                targetBase = null,
+                                oneOnly = false,
+                            )
+                            translationLog = loadLog(context)
+                            mediaItems = loadMediaItems(context)
+                        },
+                        onNext = {
+                            val target = nextPending?.name ?: return@ActionRow
+                            runOneShot(
+                                context, selectedFolderUri!!,
+                                forceRetranslate = true,
+                                targetBase = target,
+                                oneOnly = true,
+                            )
+                            statusPrefs(context).edit()
+                                .putString("status_$target", "translating")
+                                .apply()
+                            mediaItems = loadMediaItems(context)
+                        },
+                        nextLabel = nextPending?.name,
+                        hasNext = nextPending != null,
+                    )
+                }
+            }
+
             // ── Stats row ──
             item {
                 val doneCount = mediaItems.count { it.status == "done" }
-                val pendingCount = mediaItems.count { it.status == "pending" || it.status == "translating" }
+                val pendingCount = mediaItems.count {
+                    it.status == "pending" || it.status == "translating" || it.status == "weak_source"
+                }
                 val skippedCount = mediaItems.count { it.status == "skipped" }
                 StatsRow(
                     done = doneCount,
@@ -215,7 +253,8 @@ fun SubArabifyApp() {
                 }
                 items(mediaItems.sortedBy {
                     when (it.status) {
-                        "pending" -> 0; "translating" -> 1; "error" -> 2; "done" -> 3; "skipped" -> 4; else -> 5
+                        "pending" -> 0; "weak_source" -> 1; "translating" -> 2
+                        "error" -> 3; "done" -> 4; "skipped" -> 5; else -> 6
                     }
                 }) { media ->
                     MediaItemCard(
@@ -239,6 +278,19 @@ fun SubArabifyApp() {
                                 .putString("status_${media.name}", "pending")
                                 .apply()
                             mediaItems = loadMediaItems(context)
+                        },
+                        onRedo = {
+                            if (selectedFolderUri == null) return@MediaItemCard
+                            statusPrefs(context).edit()
+                                .putString("status_${media.name}", "translating")
+                                .apply()
+                            mediaItems = loadMediaItems(context)
+                            runOneShot(
+                                context, selectedFolderUri!!,
+                                forceRetranslate = true,
+                                targetBase = media.name,
+                                oneOnly = true,
+                            )
                         },
                     )
                 }
@@ -505,16 +557,77 @@ fun IntervalCard(interval: Int, onIntervalChange: (Int) -> Unit) {
     }
 }
 
-// ─── Media Item Card (with skip / unskip) ───────────────────────────
+// ─── Action row: Scan Now + Next ────────────────────────────────────
 @Composable
-fun MediaItemCard(item: MediaItem, onSkip: () -> Unit, onUnskip: () -> Unit) {
-    val (statusColor, statusIcon, statusLabel) = when (item.status) {
-        "done"        -> Triple(SuccessGreen, Icons.Rounded.CheckCircle, "Done")
-        "translating" -> Triple(InfoCyan, Icons.Rounded.Sync, "Translating")
-        "pending"     -> Triple(WarnAmber, Icons.Rounded.HourglassTop, "Pending")
-        "skipped"     -> Triple(TextMuted, Icons.Rounded.SkipNext, "Skipped")
-        "error"       -> Triple(ErrorRose, Icons.Rounded.Error, "Error")
-        else          -> Triple(TextMuted, Icons.Rounded.Help, item.status)
+fun ActionRow(
+    onScanNow: () -> Unit,
+    onNext: () -> Unit,
+    nextLabel: String?,
+    hasNext: Boolean,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Button(
+            onClick = onScanNow,
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Gold500, contentColor = DarkBg),
+        ) {
+            Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Scan Now", style = MaterialTheme.typography.labelLarge)
+        }
+        Button(
+            onClick = onNext,
+            enabled = hasNext,
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = DarkCardHigh,
+                contentColor = TextPrimary,
+                disabledContainerColor = DarkCard,
+                disabledContentColor = TextMuted,
+            ),
+        ) {
+            Icon(Icons.Rounded.SkipNext, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                if (hasNext) "Next" else "Caught up",
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+            )
+        }
+    }
+    if (hasNext && nextLabel != null) {
+        Text(
+            "Next up: $nextLabel",
+            style = MaterialTheme.typography.labelSmall,
+            color = TextMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+    }
+}
+
+// ─── Media Item Card (skip / unskip / redo) ─────────────────────────
+@Composable
+fun MediaItemCard(
+    item: MediaItem,
+    onSkip: () -> Unit,
+    onUnskip: () -> Unit,
+    onRedo: () -> Unit,
+) {
+    val (statusColor, statusIcon) = when (item.status) {
+        "done" -> SuccessGreen to Icons.Rounded.CheckCircle
+        "translating" -> InfoCyan to Icons.Rounded.Sync
+        "pending" -> WarnAmber to Icons.Rounded.HourglassTop
+        "weak_source" -> WarnAmber to Icons.Rounded.Warning
+        "skipped" -> TextMuted to Icons.Rounded.SkipNext
+        "error" -> ErrorRose to Icons.Rounded.Error
+        else -> TextMuted to Icons.Rounded.Help
     }
 
     Card(
@@ -523,7 +636,7 @@ fun MediaItemCard(item: MediaItem, onSkip: () -> Unit, onUnskip: () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = DarkCard),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(statusIcon, contentDescription = null, tint = statusColor, modifier = Modifier.size(20.dp))
@@ -537,19 +650,29 @@ fun MediaItemCard(item: MediaItem, onSkip: () -> Unit, onUnskip: () -> Unit) {
                 )
                 Text(
                     when (item.status) {
-                        "done" -> "✓ .SubArabify.ar.srt created"
-                        "pending" -> "Waiting for next scan"
+                        "done" -> "✓ Arabic .srt ready — tap redo to rebuild"
+                        "pending" -> "No usable English .srt yet"
+                        "weak_source" -> "English .srt too short (YTS promo?) — add a full .en.srt"
                         "skipped" -> "Manually skipped"
                         "translating" -> "Translation in progress…"
-                        "error" -> "Failed — will retry"
+                        "error" -> "Failed — tap redo"
                         else -> item.status
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = TextMuted,
                 )
             }
-            // Skip / Unskip button
-            if (item.status != "done") {
+            if (item.status == "done" || item.status == "error" || item.status == "weak_source") {
+                IconButton(onClick = onRedo, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        Icons.Rounded.Replay,
+                        contentDescription = "Redo",
+                        tint = Gold400,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            if (item.status != "done" && item.status != "translating") {
                 IconButton(
                     onClick = { if (item.status == "skipped") onUnskip() else onSkip() },
                     modifier = Modifier.size(36.dp),
@@ -645,7 +768,7 @@ fun LogEntryCard(entry: LogEntry) {
 private fun scheduleWorker(context: Context, folderUri: String, intervalMinutes: Int) {
     val data = workDataOf("LIBRARY_FOLDER_URI" to folderUri)
     val request = PeriodicWorkRequestBuilder<SubArabifyWorker>(
-        intervalMinutes.toLong(), TimeUnit.MINUTES,
+        intervalMinutes.toLong().coerceAtLeast(15), TimeUnit.MINUTES,
     )
         .setInputData(data)
         .setConstraints(
@@ -660,6 +783,28 @@ private fun scheduleWorker(context: Context, folderUri: String, intervalMinutes:
         ExistingPeriodicWorkPolicy.UPDATE,
         request,
     )
+    // Also kick an immediate scan so the user isn't stuck waiting 15+ minutes
+    runOneShot(context, folderUri, forceRetranslate = false, targetBase = null, oneOnly = false)
+}
+
+private fun runOneShot(
+    context: Context,
+    folderUri: String,
+    forceRetranslate: Boolean,
+    targetBase: String?,
+    oneOnly: Boolean,
+) {
+    val dataBuilder = androidx.work.Data.Builder()
+        .putString("LIBRARY_FOLDER_URI", folderUri)
+        .putBoolean("FORCE_RETRANSLATE", forceRetranslate)
+        .putBoolean("ONE_ONLY", oneOnly)
+    if (targetBase != null) {
+        dataBuilder.putString("TARGET_BASE", targetBase)
+    }
+    val request = OneTimeWorkRequestBuilder<SubArabifyWorker>()
+        .setInputData(dataBuilder.build())
+        .build()
+    WorkManager.getInstance(context).enqueue(request)
 }
 
 private fun cancelWorker(context: Context) {

@@ -26,7 +26,7 @@ Built automatically on every push to `main` and published to GitHub Pages (same 
 2. **Translate** — scans for videos that already have an English `.srt` (`.srt`, `.en.srt`, `.eng.srt`, `.English.srt`)  
 3. **Write on device** — saves `MovieName.SubArabify.ar.srt` next to the video so MX Player, VLC, and similar apps can load it  
 
-Videos with no English subtitle stay **pending** (on-device speech-to-text is not wired yet).
+Videos with no English subtitle stay **pending**. Tiny promo files (e.g. YTS ads with only a few cues) are marked **weak source** — put a full `Movie.en.srt` beside the video and tap **Redo**.
 
 ### Subtitle branding (honest rules)
 

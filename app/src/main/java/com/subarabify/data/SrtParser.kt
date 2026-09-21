@@ -8,9 +8,8 @@ data class SrtBlock(
 
 object SrtParser {
 
-    // ── Two-tone HTML branding (most SRT players render <font color>) ──
-    private const val BRAND_LINE =
-        "<font color=\"#F1F5F9\">Sub</font><font color=\"#F0A500\">Arabify</font>"
+    /** Plain brand — HTML font tags hide text on many Android players. */
+    private const val BRAND_LINE = "— SubArabify —"
 
     /**
      * Invisible-to-players preamble. Numbered cues start after this.
@@ -22,37 +21,83 @@ We mark the edges. The middle stays free — your dialogue, uninterrupted.
 If you are reading this, you already know why the filename says SubArabify.
 """
 
+    private val TIMECODE_RE =
+        Regex("""\d{2}:\d{2}:\d{2}[,.]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}[,.]\d{3}""")
+
+    /** Strip HTML / ASS-ish tags so ML Kit and players see real words. */
+    fun stripMarkup(text: String): String {
+        return text
+            .replace(Regex("""\{[^}]*\}"""), "") // {\an8} etc.
+            .replace(Regex("""<[^>]+>"""), "")
+            .replace("&nbsp;", " ")
+            .replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+    }
+
     fun parse(srtContent: String): List<SrtBlock> {
         val blocks = mutableListOf<SrtBlock>()
-        val lines = srtContent.lines()
+        // Normalize BOM + newlines
+        val lines = srtContent
+            .removePrefix("\uFEFF")
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+            .lines()
         var i = 0
 
         while (i < lines.size) {
-            val index = lines.getOrNull(i)?.trim() ?: ""
-            if (index.isEmpty() || !index.all { it.isDigit() }) {
+            val raw = lines[i].trim()
+            if (raw.isEmpty()) {
                 i++
                 continue
             }
-            val timecode = lines.getOrNull(i + 1)?.trim() ?: ""
-            i += 2
+
+            // Accept "1" or "1 " as index; also allow timecode-first blocks (no index)
+            val hasIndex = raw.all { it.isDigit() }
+            val timecodeLine: String
+            if (hasIndex) {
+                timecodeLine = lines.getOrNull(i + 1)?.trim().orEmpty()
+                if (!TIMECODE_RE.containsMatchIn(timecodeLine)) {
+                    i++
+                    continue
+                }
+                i += 2
+            } else if (TIMECODE_RE.containsMatchIn(raw)) {
+                timecodeLine = raw
+                i += 1
+            } else {
+                i++
+                continue
+            }
 
             val textLines = mutableListOf<String>()
             while (i < lines.size && lines[i].trim().isNotEmpty()) {
-                textLines.add(lines[i])
+                val cleaned = stripMarkup(lines[i])
+                if (cleaned.isNotEmpty()) textLines.add(cleaned)
                 i++
             }
-            blocks.add(SrtBlock(index, timecode, textLines))
+            if (textLines.isNotEmpty()) {
+                blocks.add(
+                    SrtBlock(
+                        index = (blocks.size + 1).toString(),
+                        timecode = timecodeLine.replace('.', ','),
+                        textLines = textLines,
+                    )
+                )
+            }
             i++
         }
         return blocks
     }
 
     /**
-     * Builds device-ready `.SubArabify.ar.srt` content:
-     *  • Opening brand near the start (first window)
-     *  • Free middle — translated dialogue only, no watermarks
+     * Builds a player-safe Arabic `.srt`:
+     *  • Opening brand near the start
+     *  • Free middle — plain translated dialogue (no font tags)
      *  • Closing brand after the last cue
-     *  • Hidden NOTE at the top for anyone who opens the file
+     *  • Hidden NOTE at the top for thinkers
      */
     fun buildBrandedSrt(
         blocks: List<SrtBlock>,
@@ -62,21 +107,16 @@ If you are reading this, you already know why the filename says SubArabify.
         val coreBlocks = mutableListOf<SrtBlock>()
         for ((idx, block) in blocks.withIndex()) {
             val translated = translatedTexts.getOrNull(idx) ?: block.textLines
-            val styledLines = translated.map { line ->
-                "<font face=\"Thmanyah Sans\">$line</font>"
-            }
-            coreBlocks.add(SrtBlock(block.index, block.timecode, styledLines))
+            val plainLines = translated.map { stripMarkup(it) }.filter { it.isNotEmpty() }
+            if (plainLines.isEmpty()) continue
+            coreBlocks.add(SrtBlock(block.index, block.timecode, plainLines))
         }
 
         val branded = mutableListOf<SrtBlock>()
 
-        // — Opening brand (first ~6s window, avoid covering first dialogue when possible) —
         branded.add(SrtBlock("0", openingBrandTimecode(coreBlocks), listOf(BRAND_LINE)))
-
-        // — Core content: middle stays free —
         branded.addAll(coreBlocks)
 
-        // — Closing brand (after last cue) —
         if (coreBlocks.isNotEmpty()) {
             val lastEnd = parseEndMs(coreBlocks.last().timecode)
             val closingStart = lastEnd + 1000
@@ -98,7 +138,6 @@ If you are reading this, you already know why the filename says SubArabify.
         return sb.toString()
     }
 
-    /** Prefer a gap before the first cue; otherwise a short early overlay. */
     private fun openingBrandTimecode(coreBlocks: List<SrtBlock>): String {
         val firstStart = if (coreBlocks.isNotEmpty()) {
             parseStartMs(coreBlocks.first().timecode)
@@ -112,17 +151,13 @@ If you are reading this, you already know why the filename says SubArabify.
             val end = firstStart - 400
             "00:00:00,500 --> ${msToTimecode(end)}"
         } else {
-            // Dialogue starts early — brief brand that most players clear for speech
             "00:00:00,200 --> 00:00:02,000"
         }
     }
 
-    /** Legacy non-branded builder (kept for compatibility) */
     fun buildSrt(blocks: List<SrtBlock>, translatedTexts: List<List<String>>): String {
         return buildBrandedSrt(blocks, translatedTexts)
     }
-
-    // ── Timecode helpers ──────────────────────────────────────────
 
     private fun parseStartMs(timecode: String): Long {
         val start = timecode.split("-->").getOrNull(0)?.trim() ?: return 0L
@@ -135,7 +170,7 @@ If you are reading this, you already know why the filename says SubArabify.
     }
 
     private fun timecodeToMs(tc: String): Long {
-        val parts = tc.replace(",", ":").split(":")
+        val parts = tc.replace(",", ":").replace(".", ":").split(":")
         if (parts.size < 4) return 0L
         val h = parts[0].toLongOrNull() ?: 0L
         val m = parts[1].toLongOrNull() ?: 0L

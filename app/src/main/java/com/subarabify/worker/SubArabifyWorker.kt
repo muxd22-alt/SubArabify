@@ -14,12 +14,12 @@ import kotlinx.coroutines.withContext
 /**
  * Background worker that:
  *  1. Scans the user-selected media folder recursively
- *  2. For each video:
- *     a) Checks if a .SubArabify.ar.srt already exists → DONE → skip
- *     b) Checks if in user skip list → SKIPPED → skip
- *     c) Checks if an English .srt exists → TRANSLATE it
- *     d) Otherwise → placeholder for on-device whisper transcription
- *  3. Updates folder status (done / pending) in SharedPreferences
+ *  2. For each video (or a single TARGET_BASE):
+ *     a) Checks if Arabic output already exists → DONE (unless FORCE_RETRANSLATE)
+ *     b) Checks if in user skip list → SKIPPED
+ *     c) Picks the best English .srt (not tiny YTS promos) → TRANSLATE
+ *     d) Otherwise → pending (whisper stub)
+ *  3. Writes a player-safe `*.SubArabify.ar.srt` (SAF-safe create name)
  */
 class SubArabifyWorker(
     private val context: Context,
@@ -29,6 +29,9 @@ class SubArabifyWorker(
     companion object {
         private const val TAG = "SubArabifyWorker"
         private const val PREFS = "subarabify_prefs"
+        /** Reject promo / stub SRTs (YTS ads are often < ~20 cues). */
+        const val MIN_CUES = 30
+        const val MIN_BYTES = 2_000
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -37,6 +40,10 @@ class SubArabifyWorker(
         val folderUri = Uri.parse(folderUriString)
         val directory = DocumentFile.fromTreeUri(context, folderUri)
             ?: return@withContext Result.failure()
+
+        val forceRetranslate = inputData.getBoolean("FORCE_RETRANSLATE", false)
+        val targetBase = inputData.getString("TARGET_BASE") // null = all
+        val oneOnly = inputData.getBoolean("ONE_ONLY", false)
 
         val translator = MlKitTranslator()
         if (!translator.prepareModel()) {
@@ -47,10 +54,12 @@ class SubArabifyWorker(
         val skipSet = loadSkipSet()
         val stats = ScanStats()
 
-        scanAndProcessFolder(directory, translator, skipSet, stats)
+        scanAndProcessFolder(
+            directory, translator, skipSet, stats,
+            forceRetranslate, targetBase, oneOnly,
+        )
         translator.close()
 
-        // Persist scan stats
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val prevDone = prefs.getInt("files_processed", 0)
         prefs.edit()
@@ -58,10 +67,13 @@ class SubArabifyWorker(
             .putString("last_scan", System.currentTimeMillis().toString())
             .apply()
 
-        // Append to activity log
         stats.logEntries.forEach { appendLogEntry(it) }
 
-        Log.i(TAG, "Scan complete: ${stats.translated} translated, ${stats.skipped} skipped, ${stats.alreadyDone} already done, ${stats.pending} pending")
+        Log.i(
+            TAG,
+            "Scan complete: ${stats.translated} translated, ${stats.skipped} skipped, " +
+                "${stats.alreadyDone} already done, ${stats.pending} pending, ${stats.weakSource} weak source"
+        )
         Result.success()
     }
 
@@ -70,19 +82,26 @@ class SubArabifyWorker(
         var alreadyDone: Int = 0,
         var skipped: Int = 0,
         var pending: Int = 0,
+        var weakSource: Int = 0,
         val logEntries: MutableList<String> = mutableListOf(),
     )
 
-    // ── Recursive scanner ───────────────────────────────────────────
     private suspend fun scanAndProcessFolder(
         folder: DocumentFile,
         translator: MlKitTranslator,
         skipSet: Set<String>,
         stats: ScanStats,
-    ) {
+        forceRetranslate: Boolean,
+        targetBase: String?,
+        oneOnly: Boolean,
+    ): Boolean {
         for (file in folder.listFiles()) {
             if (file.isDirectory) {
-                scanAndProcessFolder(file, translator, skipSet, stats)
+                val stop = scanAndProcessFolder(
+                    file, translator, skipSet, stats,
+                    forceRetranslate, targetBase, oneOnly,
+                )
+                if (stop) return true
                 continue
             }
 
@@ -90,110 +109,189 @@ class SubArabifyWorker(
             if (!isVideoFile(fileName)) continue
 
             val baseName = fileName.substringBeforeLast(".")
-            val brandedSrtName = "$baseName.SubArabify.ar.srt"
 
-            // ── Already done? ──
-            if (folder.findFile(brandedSrtName) != null) {
-                stats.alreadyDone++
-                markFolderStatus(folder.uri.toString(), baseName, "done")
+            if (targetBase != null && !baseName.equals(targetBase, ignoreCase = true)) {
                 continue
             }
 
-            // ── User skipped? ──
+            // ── Already have Arabic output? ──
+            val existingAr = findExistingArabicSrt(folder, baseName)
+            if (existingAr != null && !forceRetranslate) {
+                stats.alreadyDone++
+                markFolderStatus(baseName, "done")
+                continue
+            }
+
             if (skipSet.contains(baseName) || skipSet.contains(fileName)) {
                 stats.skipped++
-                markFolderStatus(folder.uri.toString(), baseName, "skipped")
+                markFolderStatus(baseName, "skipped")
                 continue
             }
 
-            // ── English SRT exists? → Translate ──
-            val enSrtFile = findEnglishSrt(folder, baseName)
-            if (enSrtFile != null) {
-                markFolderStatus(folder.uri.toString(), baseName, "translating")
-                val success = translateExistingSrt(folder, enSrtFile, brandedSrtName, translator)
-                if (success) {
-                    stats.translated++
-                    markFolderStatus(folder.uri.toString(), baseName, "done")
-                    stats.logEntries.add("$baseName|||success|||${System.currentTimeMillis()}")
-                } else {
-                    stats.pending++
-                    markFolderStatus(folder.uri.toString(), baseName, "error")
-                    stats.logEntries.add("$baseName|||error|||${System.currentTimeMillis()}")
-                }
+            val enSrtFile = findBestEnglishSrt(folder, baseName)
+            if (enSrtFile == null) {
+                stats.pending++
+                markFolderStatus(baseName, "pending")
+                stats.logEntries.add("$baseName|||pending|||${System.currentTimeMillis()}")
+                if (oneOnly && targetBase != null) return true
                 continue
             }
 
-            // ── No SRT → on-device transcription (pending for whisper engine) ──
-            stats.pending++
-            markFolderStatus(folder.uri.toString(), baseName, "pending")
-            stats.logEntries.add("$baseName|||pending|||${System.currentTimeMillis()}")
+            // Peek size / cue count — skip YTS promo stubs
+            val peek = readText(enSrtFile) ?: continue
+            val blocks = SrtParser.parse(peek)
+            if (blocks.size < MIN_CUES || (enSrtFile.length() in 1 until MIN_BYTES.toLong())) {
+                Log.w(TAG, "Weak English SRT for $baseName (${blocks.size} cues) — need fuller .en.srt")
+                stats.weakSource++
+                markFolderStatus(baseName, "weak_source")
+                stats.logEntries.add("$baseName|||weak_source|||${System.currentTimeMillis()}")
+                if (oneOnly && targetBase != null) return true
+                continue
+            }
+
+            markFolderStatus(baseName, "translating")
+            // Remove old / mangled outputs before rewrite
+            if (forceRetranslate || existingAr != null) {
+                deleteArabicOutputs(folder, baseName)
+            }
+
+            val success = translateExistingSrt(folder, enSrtFile, baseName, blocks, translator)
+            if (success) {
+                stats.translated++
+                markFolderStatus(baseName, "done")
+                stats.logEntries.add("$baseName|||success|||${System.currentTimeMillis()}")
+            } else {
+                stats.pending++
+                markFolderStatus(baseName, "error")
+                stats.logEntries.add("$baseName|||error|||${System.currentTimeMillis()}")
+            }
+
+            if (oneOnly) return true
         }
+        return false
     }
 
-    // ── Find English .srt with flexible naming ──────────────────────
-    private fun findEnglishSrt(folder: DocumentFile, baseName: String): DocumentFile? {
-        // Try common subtitle naming patterns
-        val candidates = listOf(
-            "$baseName.srt",
+    /**
+     * Prefer language-tagged English subs, then the largest real .srt.
+     * Never prefer tiny sidecar promos over a proper .en.srt.
+     */
+    private fun findBestEnglishSrt(folder: DocumentFile, baseName: String): DocumentFile? {
+        val tagged = listOf(
             "$baseName.en.srt",
             "$baseName.eng.srt",
             "$baseName.English.srt",
+            "$baseName.en-US.srt",
+            "$baseName.en-GB.srt",
+        ).mapNotNull { folder.findFile(it) }
+
+        val bare = folder.findFile("$baseName.srt")
+
+        val candidates = (tagged + listOfNotNull(bare))
+            .filter { f ->
+                val n = f.name?.lowercase().orEmpty()
+                !n.contains("subarabify") && !n.endsWith(".ar.srt")
+            }
+
+        if (candidates.isEmpty()) return null
+
+        // Prefer tagged names; among equals, largest file wins
+        return candidates.maxWithOrNull(
+            compareBy<DocumentFile> { f ->
+                val n = f.name?.lowercase().orEmpty()
+                when {
+                    n.contains(".en.") || n.endsWith(".en.srt") || n.contains(".eng.") ||
+                        n.contains(".english.") -> 2
+                    else -> 0
+                }
+            }.thenBy { it.length() }
         )
-        for (name in candidates) {
-            val file = folder.findFile(name)
-            if (file != null) return file
-        }
-        return null
     }
 
-    // ── Translate and write branded SRT ─────────────────────────────
+    /** Detect player-safe and legacy/mangled Arabic outputs. */
+    private fun findExistingArabicSrt(folder: DocumentFile, baseName: String): DocumentFile? {
+        val names = listOf(
+            "$baseName.SubArabify.ar.srt",
+            "${baseName}_SubArabify_ar.srt",
+            "$baseName.SubArabify.ar", // some providers add .srt later
+            "$baseName.ar.srt",
+        )
+        for (name in names) {
+            folder.findFile(name)?.let { return it }
+        }
+        // Fuzzy: any sibling ending with SubArabify_ar.srt / SubArabify.ar.srt
+        return folder.listFiles().firstOrNull { f ->
+            val n = f.name ?: return@firstOrNull false
+            n.startsWith(baseName) && (
+                n.contains("SubArabify", ignoreCase = true) && n.endsWith(".srt", true)
+                )
+        }
+    }
+
+    private fun deleteArabicOutputs(folder: DocumentFile, baseName: String) {
+        folder.listFiles().forEach { f ->
+            val n = f.name ?: return@forEach
+            if (!n.endsWith(".srt", true)) return@forEach
+            if (!n.startsWith(baseName)) return@forEach
+            val isOurs = n.contains("SubArabify", ignoreCase = true) ||
+                n.equals("$baseName.ar.srt", ignoreCase = true)
+            if (isOurs) f.delete()
+        }
+    }
+
+    private fun readText(file: DocumentFile): String? {
+        return try {
+            context.contentResolver.openInputStream(file.uri)
+                ?.bufferedReader()?.use { it.readText() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Read failed: ${file.name}", e)
+            null
+        }
+    }
+
     private suspend fun translateExistingSrt(
         parentFolder: DocumentFile,
         enSrtFile: DocumentFile,
-        brandedSrtName: String,
+        baseName: String,
+        blocks: List<com.subarabify.data.SrtBlock>,
         translator: MlKitTranslator,
     ): Boolean {
         return try {
-            val content = context.contentResolver.openInputStream(enSrtFile.uri)
-                ?.bufferedReader()?.use { it.readText() } ?: return false
-
-            val blocks = SrtParser.parse(content)
             val translatedBlocks = mutableListOf<List<String>>()
-
             for (block in blocks) {
-                val translatedLines = translator.translateBatch(block.textLines)
-                translatedBlocks.add(translatedLines)
+                translatedBlocks.add(translator.translateBatch(block.textLines))
             }
 
-            // Start + end brand, free middle, filename carries SubArabify
             val arSrtContent = SrtParser.buildBrandedSrt(blocks, translatedBlocks)
 
-            val newFile = parentFolder.createFile("application/x-subrip", brandedSrtName)
+            // SAF often turns "a.b.c.srt" into "a_b_c.srt". Pass name WITHOUT
+            // a trailing .srt and let the MIME add .srt → "base.SubArabify.ar.srt"
+            val createName = "$baseName.SubArabify.ar"
+            val newFile = parentFolder.createFile("application/x-subrip", createName)
+                ?: parentFolder.createFile("text/plain", createName)
                 ?: return false
+
             context.contentResolver.openOutputStream(newFile.uri)?.use {
                 it.write(arSrtContent.toByteArray(Charsets.UTF_8))
-            }
+            } ?: return false
+
+            Log.i(TAG, "Wrote Arabic SRT as '${newFile.name}' (${blocks.size} cues) from '${enSrtFile.name}'")
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Translation failed for $brandedSrtName", e)
+            Log.e(TAG, "Translation failed for $baseName", e)
             false
         }
     }
 
-    // ── Status tracking per file ────────────────────────────────────
-    private fun markFolderStatus(folderUri: String, baseName: String, status: String) {
+    private fun markFolderStatus(baseName: String, status: String) {
         val prefs = context.getSharedPreferences("subarabify_status", Context.MODE_PRIVATE)
         prefs.edit().putString("status_$baseName", status).apply()
     }
 
-    // ── Skip list ───────────────────────────────────────────────────
     private fun loadSkipSet(): Set<String> {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val raw = prefs.getStringSet("skip_list", emptySet()) ?: emptySet()
-        return raw
+        return prefs.getStringSet("skip_list", emptySet()) ?: emptySet()
     }
 
-    // ── Activity log persistence ────────────────────────────────────
     private fun appendLogEntry(entry: String) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val existing = prefs.getString("log_entries", "") ?: ""

@@ -4,6 +4,7 @@ import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.nl.translate.TranslateLanguage
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.TranslatorOptions
+import com.subarabify.data.SrtParser
 import kotlinx.coroutines.tasks.await
 
 class MlKitTranslator {
@@ -28,13 +29,14 @@ class MlKitTranslator {
 
     suspend fun translateBatch(lines: List<String>): List<String> {
         return lines.map { line ->
-            if (line.trim().isEmpty() || line.all { it.isDigit() }) {
-                line
+            val clean = SrtParser.stripMarkup(line)
+            if (clean.isEmpty() || clean.all { it.isDigit() }) {
+                clean
             } else {
                 try {
-                    translator.translate(line).await()
+                    translator.translate(clean).await()
                 } catch (e: Exception) {
-                    line
+                    clean
                 }
             }
         }
