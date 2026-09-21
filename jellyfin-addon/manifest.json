@@ -1,0 +1,14 @@
+{
+  "name": "SubArabify Arabic Subtitles",
+  "guid": "9b4e5c2a-subarabify-arabic-subtitles-103beta",
+  "version": "1.0.3-beta",
+  "description": "On-server EN→AR subtitles. Downloads a small Arabic NMT model once, then writes Movie.SubArabify.ar.srt next to each video with bit-identical timings. Runs on normal servers and on Android via Termux (pure Python, no .NET).",
+  "overview": "Automatic Arabic subtitles for your Jellyfin library. Offline after the one-time model download. Brand cues only in free gaps — dialogue sync untouched.",
+  "owner": "SubArabify",
+  "category": "Subtitles",
+  "imageUrl": "https://muxd22-alt.github.io/SubArabify/icon.jpg",
+  "targetAbi": "net8.0",
+  "status": "Beta",
+  "sourceUrl": "https://github.com/muxd22-alt/SubArabify/tree/main/jellyfin-addon",
+  "changelog": "1.0.3-beta: smart chunked translation, persistent memory, timing-safe branding, Termux support, VTT input."
+}

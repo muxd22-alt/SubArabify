@@ -1,0 +1,20 @@
+[Unit]
+Description=SubArabify Jellyfin addon — on-server AR subtitles (1.0.3-beta)
+After=network-online.target jellyfin.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=jellyfin
+# Edit the paths below for your server:
+Environment=SUBARABIFY_MEDIA_DIR=/media
+Environment=SUBARABIFY_CACHE=/var/lib/subarabify
+# Optional Jellyfin refresh after each scan:
+# Environment=JELLYFIN_URL=http://localhost:8096
+# Environment=JELLYFIN_API_KEY=YOUR_API_KEY
+ExecStart=/usr/bin/python3 /opt/subarabify/jellyfin-addon/subarabify_jellyfin.py --media /media --watch --interval 60 --jellyfin-refresh
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

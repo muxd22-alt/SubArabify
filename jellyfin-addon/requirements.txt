@@ -1,0 +1,11 @@
+# SubArabify Jellyfin addon — server runtime.
+# The small Arabic NMT model (~200 MB) is downloaded on first enable;
+# torch CPU is required for full neural translation.
+# Termux note: torch wheels can be heavy on phones — the addon still runs
+# without torch (glossary + translation-memory mode) until you install it.
+transformers>=4.40
+huggingface-hub>=0.23
+torch --index-url https://download.pytorch.org/whl/cpu
+sentencepiece>=0.2
+sacremoses>=0.1
+requests>=2.31

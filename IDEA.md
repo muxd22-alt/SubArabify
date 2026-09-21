@@ -1,0 +1,1 @@
+subarabic on device
