@@ -31,9 +31,12 @@ Both return **plain, unbranded SRT**. Branding happens client-side (shared
 | `POST /transcribe` | blocking upload (`file=`/`srt=`) → `.srt` text — **short clips only** |
 
 A 2 h movie takes **~15–20 min** on a T4, so jobs are async by design: submit →
-poll → download. The public URL changes every Colab session.
+poll → download. The public URL changes every Colab session unless configured with a static tunnel token.
 
 ## Notes
+* **Static / Fixed Tunnel URL** — Set `CLOUDFLARE_TUNNEL_TOKEN` (and optional `CLOUDFLARE_DOMAIN`) or `NGROK_AUTHTOKEN` with `NGROK_DOMAIN` in Colab secrets or env vars to preserve a fixed endpoint across restarts.
+* **Google Drive Cache** — Google Drive model caching in Cell 2 (`USE_DRIVE_CACHE = True`) preserves HF models in Drive (`/content/drive/MyDrive/subarabify_hf_cache`) so downloads are skipped on new sessions.
+* **Persistent Self-Hosting** — For uninterrupted 24/7 execution without browser tab dependencies, run the backend FastAPI code on a dedicated local NVIDIA GPU box, RunPod instance, or serverless GPU (Modal).
 
 * **Why `transformers`, not `faster-whisper`?** The whisper repo is a raw
   Transformers checkpoint (safetensors, ~2B params). faster-whisper only loads
