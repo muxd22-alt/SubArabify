@@ -82,7 +82,7 @@ from fastapi.testclient import TestClient  # noqa
 client = TestClient(NS["app"])
 
 r = client.get("/health")
-check("/health fields", r.json()["version"] == "0.2.2-beta"
+check("/health fields", r.json()["version"] == "0.2.3-alpha"
       and r.json()["mt_loaded"] is False and r.json()["status"] == "ok", r.text)
 
 r = client.get("/")

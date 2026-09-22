@@ -1,4 +1,4 @@
-# SubArabify client — v0.2.2-beta
+# SubArabify client — v0.2.3-alpha
 
 Turns the Colab T4 backend (`backend/SubArabify_Backend.ipynb`) into Arabic
 subtitles for your local movie folder. Pure routing — **no local AI**, just

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SubArabify client — v0.2.2-beta.
+"""SubArabify client — v0.2.3-alpha.
 
 The only engine is the Colab T4 backend (backend/SubArabify_Backend.ipynb).
 This client routes each local movie to it:
@@ -54,7 +54,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import srtcore  # noqa: E402  (shared branding/parsing, stdlib-only)
 
-VERSION = "0.2.2-beta"
+VERSION = "0.2.3-alpha"
 CF_SAFE_BYTES = 90 * 1024 * 1024   # Cloudflare quick tunnels cap bodies near 100 MB
 DEFAULT_TIMEOUT = 5400             # 90 min overall per job
 POLL = 15.0                        # seconds between status polls
@@ -563,7 +563,7 @@ def resolve_base(args) -> str:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         prog="client/client.py",
-        description="SubArabify client v0.2.2-beta — routes each local movie to the "
+        description="SubArabify client v0.2.3-alpha — routes each local movie to the "
                     "Colab T4 backend: translate the English .srt, or transcribe the "
                     "soundtrack to Arabic. Writes branded .SubArabify.ar.srt.",
         epilog=(

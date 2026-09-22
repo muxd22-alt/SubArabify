@@ -1,4 +1,4 @@
-# SubArabify — v0.2.2-beta
+# SubArabify — v0.2.3-alpha
 
 ![SubArabify icon](docs/icon.jpg)
 
@@ -23,6 +23,7 @@ Either way you get a player-ready `MovieName.SubArabify.ar.srt` next to the vide
 | **Source** | [github.com/muxd22-alt/SubArabify](https://github.com/muxd22-alt/SubArabify) |
 | **Backend notebook** | [`backend/SubArabify_Backend.ipynb`](backend/SubArabify_Backend.ipynb) — open in Colab, Run all |
 | **Python client** | [`client/`](client/) — same routing & branding from any machine |
+| **Jellyfin addon** | [`jellyfin-addon/`](jellyfin-addon/) — same engine on your server / **Termux (Android TV)**; QR on TV |
 
 Built automatically on every push to `main` and published to GitHub Pages (same APK the site's Download button serves).
 
@@ -61,6 +62,31 @@ folder scans, and `--job <id> --save-to <video>` resume after a disconnect. A 2 
 ≈ **15–20 min** on the T4 with real % progress. `--transport auto|wav|opus` switches to
 Opus when a big WAV would exceed the tunnel's ~100 MB body limit.
 
+### 4 · Or the Jellyfin addon — one engine, everywhere
+
+[`jellyfin-addon/`](jellyfin-addon/) is a third front door for the **same backend**: it
+scans a library on a Jellyfin server **or** in **Termux** (phone or Android TV), routes
+each movie with the identical rules, and writes `Movie.SubArabify.ar.srt`.
+
+```bash
+pip install -r jellyfin-addon/requirements.txt
+python jellyfin-addon/subarabify_jellyfin.py --media /media/movies --watch
+```
+
+The whole point is **one URL, used everywhere** — the exact same tunnel URL you paste
+into the app's Backend card. No typing needed on a TV:
+
+| How you get the URL onto the TV / phone | Command |
+|---|---|
+| **QR code printed on the TV** (scan with any phone camera → paste into the app) | `python jellyfin-addon/subarabify_jellyfin.py --qrcode` |
+| **LAN copy endpoint** (open `http://<jellyfin-host>:8477/subarabify/config` in a phone browser) | `python jellyfin-addon/subarabify_jellyfin.py --serve` |
+| **Termux universal runner** (prompts once, saves to `config.json`) | `./jellyfin-addon/run-termux.sh --media ~/storage/movies --watch` |
+
+Config precedence everywhere: `--url` flag **>** `$SUBARABIFY_COLAB_URL` **>**
+`jellyfin-addon/config.json` → `"colab_url"`. The Android app reads the same URL from
+its Backend card; the client from `--url`/env; the addon from config/env/flag. Same
+routing, same branding, same backend — device does not change the result.
+
 ---
 
 ## The API (what both the app and client call)
@@ -88,7 +114,8 @@ Jobs are async and queue server-side; ~8 finished jobs are kept before the oldes
 | **Timings** | Dialogue timecodes bit-identical to the source — sync never hurt |
 
 The same rules live in two places that never drift: `SrtParser.kt` (Android) and
-`srtcore.py` (Python client), proven by tests on both sides.
+`client/srtcore.py` — the Jellyfin addon ships a byte-identical copy of the latter
+(`jellyfin-addon/srtcore.py`), all proven by the same tests.
 
 ## Features
 
@@ -98,6 +125,7 @@ The same rules live in two places that never drift: `SrtParser.kt` (Android) and
 | Translation | `Helsinki-NLP/opus-mt-en-ar` on the T4, per-cue, timings preserved |
 | Transcription | `samil24/whisper-large-arabic-dialects-v5` (raw HF checkpoint, fp16) – Arabic-native output |
 | App engine | Thin HTTP client (`BackendClient.kt`) — no ML Kit, no Vosk, no local models at all |
+| Jellyfin addon | Same backend, server or Termux — `jellyfin-addon/`, QR on TV, LAN config endpoint |
 | Audio extraction | `AudioExtractor` (MediaCodec + resampler) → 16 kHz mono WAV, streamed, no FFmpeg |
 | Resume | Poll tolerates tunnel blips; long deadlocks fail cleanly and a later scan re-routes |
 | Weak-source guard | promo `.srt` (< 30 cues / < 2 KB) marked `weak_source`, never sent |
@@ -120,6 +148,15 @@ SubArabify/
 │   ├── test_client.py             # 12 mock-backend tests (runs in CI)
 │   ├── test_srtcore.py            # 7 srtcore tests (runs in CI)
 │   └── README.md
+├── jellyfin-addon/
+│   ├── subarabify_jellyfin.py     # unified addon: --media/--watch/--qrcode/--serve/--job resume
+│   ├── srtcore.py                 # byte-identical copy of client/srtcore.py (parity, never drifts)
+│   ├── config.json                # the one config: colab_url, media, intervals, port
+│   ├── manifest.json              # Jellyfin repository catalog (checksum injected by CI)
+│   ├── make_manifest.py           # zip SHA-256 → public/jellyfin-manifest.json
+│   ├── run-termux.sh              # Termux universal runner (phone + Android TV)
+│   ├── test_addon.py              # config/QR/LAN-endpoint/routing/mock-backend tests (in CI)
+│   └── README.md
 ├── app/                           # Android — container, not the engine
 │   └── src/main/java/com/subarabify/
 │       ├── engine/BackendClient.kt   # /health, /jobs, /jobs/{id}, /jobs/{id}/srt
@@ -140,13 +177,15 @@ gradle assembleRelease --no-daemon
 
 APK output: `app/build/outputs/apk/release/`
 
-## Why the clean slate in 0.2.2-beta
+## Why the clean slate in 0.2.3-alpha
 
 Earlier betas shipped an on-device ML Kit translator + a Vosk speech-to-text engine on the
 phone, and a Colab notebook ("1.0.4-pre") for transcription only. The history and those
-stacks were removed for 0.2.2-beta: the phone now holds no models at all, and translate +
-transcribe share one backend, one API, and one set of SRT rules. The git history was reset
-to a single clean commit so the repo tells only this story.
+stacks were removed: the phone now holds no models at all, and translate +
+transcribe share one backend, one API, and one set of SRT rules (introduced as the clean
+slate in 0.2.2-beta). The Jellyfin addon lives again as a **backend-driven** companion
+(the old whisper.cpp/llama.cpp engine is gone) — `jellyfin-addon/` is just another front
+door for the Colab backend, with a QR code to carry the same URL onto the TV.
 
 ## Branding / icon
 

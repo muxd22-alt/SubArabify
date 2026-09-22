@@ -1,7 +1,9 @@
 """Shared SRT core for SubArabify (v0.2.3-alpha).
 
-Used by the Python client (client/) — parity rules with
-app/src/main/java/com/subarabify/data/SrtParser.kt:
+Used by the Python client (client/) AND the unified Jellyfin addon
+(jellyfin-addon/) — parity rules with
+app/src/main/java/com/subarabify/data/SrtParser.kt.
+This file is intentionally an identical copy of client/srtcore.py:
   * dialogue timecodes are NEVER modified — copied bit-identical
   * brand cues only go into real free gaps (never overlap dialogue)
   * filename always ends with .SubArabify.ar.srt

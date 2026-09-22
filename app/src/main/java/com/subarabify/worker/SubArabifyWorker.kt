@@ -17,7 +17,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Background worker (0.2.2-beta) — the app's ONLY engine is the Colab T4
+ * Background worker (0.2.3-alpha) — the app's ONLY engine is the Colab T4
  * backend (backend/SubArabify_Backend.ipynb). Everything heavy happens there;
  * this worker scans, routes and brands:
  *
@@ -407,7 +407,7 @@ class SubArabifyWorker(
     private fun markModelReady(ready: Boolean, health: BackendClient.Health) {
         prefs().edit()
             .putBoolean("model_ready", ready)
-            .putString("model_name", if (ready) "Colab T4 backend (0.2.2-beta)" else "not ready")
+            .putString("model_name", if (ready) "Colab T4 backend (0.2.3-alpha)" else "not ready")
             .putString("mt_loaded", health.mtLoaded.toString())
             .putString("model_device", health.device ?: "")
             .apply()

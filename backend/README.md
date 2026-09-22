@@ -1,4 +1,4 @@
-# SubArabify Backend — v0.2.2-beta
+# SubArabify Backend — v0.2.3-alpha
 
 The **only engine** behind SubArabify: a self-contained Colab T4 notebook,
 hidden behind a free public tunnel. It serves the client (`client/`) and the

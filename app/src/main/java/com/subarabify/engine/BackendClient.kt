@@ -20,7 +20,7 @@ import java.net.URL
 
 /**
  * Thin HTTP client for the SubArabify Colab backend (backend/
- * SubArabify_Backend.ipynb, v0.2.2-beta).
+ * SubArabify_Backend.ipynb, v0.2.3-alpha).
  *
  * This class is the ONLY engine the app talks to. Two job kinds:
  *   * translate — multipart field `srt=` (English subtitle → Arabic, timings
@@ -287,7 +287,7 @@ class BackendClient(baseUrl: String) {
         conn.requestMethod = method
         conn.connectTimeout = 15_000
         conn.readTimeout = 90_000
-        conn.setRequestProperty("User-Agent", "SubArabify-Android/0.2.2-beta")
+        conn.setRequestProperty("User-Agent", "SubArabify-Android/0.2.3-alpha")
         conn.setRequestProperty("Accept", "application/json, text/plain")
         return conn
     }
@@ -340,7 +340,7 @@ class BackendClient(baseUrl: String) {
         name.replace(Regex("""[^A-Za-z0-9._-]"""), "_").take(80)
 
     companion object {
-        private const val BOUNDARY = "SubArabify-0.2.2-beta"
+        private const val BOUNDARY = "SubArabify-0.2.3-alpha"
         private const val MAX_POLL_MISSES = 12
     }
 }

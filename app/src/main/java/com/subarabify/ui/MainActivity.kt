@@ -82,7 +82,7 @@ data class PreviewData(
     val weak: Boolean = false,
 )
 
-const val APP_VERSION_LABEL = "v0.2.2-beta"
+const val APP_VERSION_LABEL = "v0.2.3-alpha"
 
 // ─── Root composable ────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)

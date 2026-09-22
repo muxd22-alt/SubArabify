@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.2.3-alpha — same engine, versioned
+
+First cut re-releasing the clean-slate stack under a new version line. Everything from
+0.2.2-beta carries over; this tag's job is to lock the **Jellyfin addon** addition that
+0.2.2-beta CI shipped days after its tag.
+
+- App: `versionCode` 23, `versionName "0.2.3-alpha"` (label, User-Agent, multipart
+  boundary, brand line all bumped).
+- **Jellyfin addon now in the release**: `jellyfin-addon/` is a backend-driven companion
+  of the Colab backend — scan a library on a server or in Termux, route each movie
+  (skip / translate / transcribe), write branded `*.SubArabify.ar.srt`. One URL
+  everywhere; `--qrcode` prints a scannable QR on the TV; `--serve` exposes
+  `http://<host>:8477/subarabify/config`; `run-termux.sh` is the universal runner.
+- CI builds, self-tests the addon, and publishes `SubArabify-0.2.3-alpha.apk` + the
+  addon ZIP + `jellyfin-manifest.json` to GitHub Pages.
+- Docs & landing page updated to v0.2.3-alpha with the unified one-URL story.
+
 ## 0.2.2-beta — clean slate, one backend
 
 A reset that takes the lesson of the earlier betas: the phone should only carry the
@@ -36,8 +53,26 @@ this story.
   `versionCode` 22, `versionName 0.2.2-beta`; `usesCleartextTraffic` enabled for tunnel URLs.
 
 **Docs & housekeeping**
-- `colab/` and `jellyfin-addon/` deleted; landing page, README, and CI rebuilt around the
-  one-engine story. CI self-tests the Python client and ships `SubArabify-0.2.2-beta.apk`.
+- Landing page, README, and CI rebuilt around the one-engine story. CI self-tests the
+  Python client + the Jellyfin addon and ships `SubArabify-0.2.2-beta.apk`.
+
+**Jellyfin addon — unified, backend-driven ([`jellyfin-addon/`](jellyfin-addon/))**
+- Re-added the "smart way": the addon is now a **third front door for the same Colab
+  backend** (the old on-device whisper.cpp/llama.cpp engine is gone). Runs on a Jellyfin
+  server or in Termux (phone / Android TV); identical routing + branding
+  (`srtcore.py` is a byte-identical copy of `client/srtcore.py`).
+- **One URL everywhere**: `--url` > `$SUBARABIFY_COLAB_URL` > `config.json` `colab_url` —
+  exactly the URL pasted into the app's Backend card.
+- **QR on the TV for the Android app**: `python jellyfin-addon/subarabify_jellyfin.py
+  --qrcode` prints a scannable QR of the backend URL (scan → paste into the app) plus an
+  optional `--qr-png`; `--serve` exposes a LAN endpoint
+  (`http://<host>:8477/subarabify/config`) for phone-safe copying.
+- **Smart transport on the server**: files ≤ ~90 MB are uploaded directly (the backend
+  converts with its own ffmpeg — no local ffmpeg needed), bigger ones are reduced to
+  16 kHz WAV / Opus when a local ffmpeg exists (Jellyfin ships one).
+- `run-termux.sh` universal runner prompts once for the URL and saves `config.json`.
+- Added `test_addon.py` (config precedence, QR, LAN endpoint, routing, mock-backend
+  round trip) — runs in CI alongside the existing suites.
 
 ## 1.0.4-pre — (removed) Colab T4 full-movie transcription
 

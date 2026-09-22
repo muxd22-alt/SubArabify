@@ -1,4 +1,4 @@
-"""Self-tests for client/client.py — SubArabify v0.2.2-beta.
+"""Self-tests for client/client.py — SubArabify v0.2.3-alpha.
 
 Runs:  python client/test_client.py        (also wired into CI)
 
@@ -82,7 +82,7 @@ class _Backend(http.server.BaseHTTPRequestHandler):
         if self.path == "/health":
             return self._json({"status": "ok",
                                "model": "samil24/whisper-large-arabic-dialects-v5",
-                               "version": "0.2.2-beta", "model_loaded": True,
+                               "version": "0.2.3-alpha", "model_loaded": True,
                                "device": "NVIDIA T4"})
         if self.path == "/jobs/j123/srt":
             return self._text(SAMPLE_SRT)

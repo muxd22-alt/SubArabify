@@ -19,14 +19,14 @@ object SrtParser {
 
     /** Plain brand — HTML font tags hide text on many Android players. */
     const val BRAND_LINE = "— SubArabify —"
-    const val APP_VERSION = "0.2.2-beta"
+    const val APP_VERSION = "0.2.3-alpha"
 
     /**
      * Invisible-to-players preamble. Numbered cues start after this.
      * Anyone who opens the .srt in a text editor will find it.
      */
     const val THINKER_NOTE = """NOTE
-SubArabify 0.2.2-beta · for thinkers
+SubArabify 0.2.3-alpha · for thinkers
 We mark the edges. The middle stays free — your dialogue, uninterrupted.
 Timings below are bit-identical to the English source; only the brand cues are added.
 If you are reading this, you already know why the filename says SubArabify.

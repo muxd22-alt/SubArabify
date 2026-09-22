@@ -34,13 +34,26 @@ jobs:
           python3 client/test_srtcore.py
           python3 client/test_client.py
 
+      - name: Self-test Jellyfin addon (config/QR/LAN endpoint/routing)
+        run: |
+          python3 -m pip install -q requests "qrcode[pil]"
+          python3 jellyfin-addon/test_addon.py
+
       - name: Prepare GitHub Pages site
         run: |
           mkdir -p public
           cp docs/index.html public/index.html
           cp docs/icon.jpg public/icon.jpg
           cp app/build/outputs/apk/release/*.apk public/SubArabify-latest.apk
-          cp public/SubArabify-latest.apk "public/SubArabify-0.2.2-beta.apk"
+          cp "public/SubArabify-latest.apk" "public/SubArabify-0.2.3-alpha.apk"
+          zip -r public/subarabify-jellyfin-addon-0.2.3-alpha.zip \
+            jellyfin-addon/subarabify_jellyfin.py \
+            jellyfin-addon/srtcore.py \
+            jellyfin-addon/config.json \
+            jellyfin-addon/requirements.txt \
+            jellyfin-addon/run-termux.sh \
+            jellyfin-addon/README.md
+          python3 jellyfin-addon/make_manifest.py public/subarabify-jellyfin-addon-0.2.3-alpha.zip
 
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v3

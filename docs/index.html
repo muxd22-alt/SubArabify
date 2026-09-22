@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SubArabify — Automatic Arabic subtitles, powered by your Colab T4</title>
-  <meta name="description" content="Pick a folder. SubArabify sends your English subtitle — or your movie's audio track — to a free Google Colab T4 backend and writes timing-safe MovieName.SubArabify.ar.srt beside each video. v0.2.2-beta." />
+  <meta name="description" content="Pick a folder. SubArabify sends your English subtitle — or your movie's audio track — to a free Google Colab T4 backend and writes timing-safe MovieName.SubArabify.ar.srt beside each video. v0.2.3-alpha." />
   <meta property="og:title" content="SubArabify — Automatic Arabic subtitles" />
   <meta property="og:description" content="Colab T4 backend: translate subtitles to Arabic, or transcribe the audio straight to Arabic. Preview like a player." />
   <meta property="og:image" content="icon.jpg" />
@@ -398,13 +398,14 @@
   <div class="wrap">
     <header class="brand-bar">
       <div class="brand"><img src="icon.jpg" alt="SubArabify icon" />Sub<em>Arabify</em></div>
-      <div class="ver">v0.2.2 · beta</div>
+      <div class="ver">v0.2.3 · alpha</div>
     </header>
 
     <nav class="links" aria-label="Sections">
       <a href="#download">Download</a>
       <a href="#how">How it works</a>
       <a href="#backend">Backend</a>
+      <a href="#addon">Jellyfin addon</a>
       <a href="#new">What's new</a>
       <a href="https://github.com/muxd22-alt/SubArabify">GitHub</a>
     </nav>
@@ -425,7 +426,7 @@
         </a>
         <a class="cta ghost" href="#backend">Run the backend</a>
         <p class="cta-meta">
-          v0.2.2-beta · Android + Python client · built on every push to <code>main</code><br />
+          v0.2.3-alpha · Android + Python client + Jellyfin addon · built on every push to <code>main</code><br />
           <a href="https://github.com/muxd22-alt/SubArabify">Source on GitHub</a>
         </p>
       </div>
@@ -463,7 +464,7 @@
     </section>
 
     <section class="card" id="new">
-      <h2>New in v0.2.2-beta</h2>
+      <h2>New in v0.2.3-alpha</h2>
       <p class="sub">A clean slate: every translation &amp; transcription runs on a free Google Colab T4 backend.</p>
       <div class="grid">
         <div class="feat"><div class="ico">☁️</div><strong>One engine, off the phone</strong><span>Translate AND transcribe both run on a Colab T4 (samil24 Arabic Whisper + opus-mt-en-ar). The app installs in seconds.</span></div>
@@ -473,6 +474,7 @@
         <div class="feat"><div class="ico">🧭</div><strong>Smart routing</strong><span>Already has Arabic? skip. Has an English .srt? translate it. Nothing? transcribe the audio.</span></div>
         <div class="feat"><div class="ico">⏱️</div><strong>Sync-safe brand</strong><span>Brand cues only in free gaps — dialogue timings never touched.</span></div>
         <div class="feat"><div class="ico">🐍</div><strong>Python client</strong><span>Same routing &amp; branding from any machine: <code>python client/client.py --media /movies --url http(s)…</code></span></div>
+        <div class="feat"><div class="ico">💾</div><strong>Jellyfin addon — one URL</strong><span>Server or Termux (Android TV): scans a library into <code>*.SubArabify.ar.srt</code> and prints a QR of the same backend URL on the TV.</span></div>
         <div class="feat"><div class="ico">🧹</div><strong>Clean slate</strong><span>Old on-device ML Kit / Vosk stacks are gone. One backend, one set of rules, everywhere.</span></div>
       </div>
     </section>
@@ -560,6 +562,40 @@
       </div>
     </section>
 
+    <section class="card" id="addon">
+      <h2>💾 Jellyfin addon — one URL, everywhere</h2>
+      <p class="sub">The same backend, reachable from a Jellyfin server or Termux. Same routing, same branding, same URL you already paste into the app.</p>
+      <div class="steps">
+        <div class="step">
+          <div>
+            <h3>1 · It's the same backend URL</h3>
+            <p>The addon reads it from <code>--url</code>, then <code>$SUBARABIFY_COLAB_URL</code>, then <code>jellyfin-addon/config.json</code>. Whatever you typed into the app's Backend card works verbatim here.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>2 · QR on the TV — for the Android app</h3>
+            <p>Run the addon with <code>--qrcode</code> on your Jellyfin server or in Termux: a scannable QR of the tunnel URL appears right on the TV screen. Scan it with any phone camera and paste into the app's Backend card — no typing long URLs.</p>
+            <div class="codebox"><button class="copybtn" data-copy="python jellyfin-addon/subarabify_jellyfin.py --qrcode">Copy</button>python jellyfin-addon/subarabify_jellyfin.py --qrcode</div>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>3 · Or copy from the LAN endpoint</h3>
+            <p><code>--serve</code> opens http://&lt;jellyfin-host&gt;:8477/subarabify/config — open it in a phone browser and copy the URL from the JSON.</p>
+            <div class="codebox"><button class="copybtn" data-copy="python jellyfin-addon/subarabify_jellyfin.py --serve --media /media/movies --watch">Copy</button>python jellyfin-addon/subarabify_jellyfin.py --serve --media /media/movies --watch</div>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>4 · Termux universal runner</h3>
+            <p>No Jellyfin server at all? <code>run-termux.sh</code> installs Python + ffmpeg in Termux on any phone or Android TV, asks for the URL once, and watches a folder.</p>
+            <div class="codebox"><button class="copybtn" data-copy="./jellyfin-addon/run-termux.sh --media ~/storage/movies --watch">Copy</button>./jellyfin-addon/run-termux.sh --media ~/storage/movies --watch</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="card limits">
       <h2>Be clear about limits</h2>
       <p class="sub">Honest beta notes.</p>
@@ -573,7 +609,7 @@
 
     <footer>
       <p>
-        <img src="icon.jpg" alt="" />SubArabify v0.2.2-beta · open source<br />
+        <img src="icon.jpg" alt="" />SubArabify v0.2.3-alpha · open source<br />
         <a href="https://github.com/muxd22-alt/SubArabify">github.com/muxd22-alt/SubArabify</a>
         ·
         <a href="SubArabify-latest.apk" download>Direct APK</a>
