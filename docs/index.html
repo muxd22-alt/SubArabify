@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SubArabify — Automatic Arabic subtitles, on-device</title>
-  <meta name="description" content="Pick a folder. SubArabify translates English subtitles to Arabic on-device and writes MovieName.SubArabify.ar.srt beside your videos. Offline, private, timing-safe. v1.0.3-beta." />
+  <meta name="description" content="Pick a folder. SubArabify translates English subtitles to Arabic on-device and writes MovieName.SubArabify.ar.srt beside your videos. Offline, private, timing-safe. Plus full-movie Arabic transcription on a free Colab T4. v1.0.4-pre." />
   <meta property="og:title" content="SubArabify — Automatic Arabic subtitles" />
   <meta property="og:description" content="On-device EN→AR subtitles. Preview like a player. Jellyfin addon for servers + Termux." />
   <meta property="og:image" content="icon.jpg" />
@@ -398,7 +398,7 @@
   <div class="wrap">
     <header class="brand-bar">
       <div class="brand"><img src="icon.jpg" alt="SubArabify icon" />Sub<em>Arabify</em></div>
-      <div class="ver">v1.0.3 · beta</div>
+      <div class="ver">v1.0.4 · pre</div>
     </header>
 
     <nav class="links" aria-label="Sections">
@@ -424,7 +424,7 @@
         </a>
         <a class="cta ghost" href="#jellyfin">Jellyfin addon</a>
         <p class="cta-meta">
-          v1.0.3-beta · Android · built on every push to <code>main</code><br />
+          v1.0.4-pre · Android · built on every push to <code>main</code><br />
           <a href="https://github.com/muxd22-alt/SubArabify">Source on GitHub</a>
         </p>
       </div>
@@ -462,9 +462,10 @@
     </section>
 
     <section class="card" id="new">
-      <h2>New in v1.0.3-beta</h2>
-      <p class="sub">Smarter translation, zero re-run lag, and something real to look at.</p>
+      <h2>New in v1.0.4-pre</h2>
+      <p class="sub">Full-movie Arabic transcription on a free Colab T4 GPU — plus everything from 1.0.3-beta.</p>
       <div class="grid">
+        <div class="feat"><div class="ico">☁️</div><strong>Colab T4 transcription</strong><span>Hear whole movies in Arabic — Whisper large-v3 fine-tune for Arabic dialects, async jobs, real progress (notebook + client in <code>colab/</code>).</span></div>
         <div class="feat"><div class="ico">🧠</div><strong>Context translation</strong><span>Speaker labels shielded, cues batched, glossary + Arabic punctuation fix.</span></div>
         <div class="feat"><div class="ico">⚡</div><strong>No lag between runs</strong><span>~10 model calls per movie + on-disk memory for repeats.</span></div>
         <div class="feat"><div class="ico">🎬</div><strong>Subtitle preview</strong><span>Cues rendered like a real player, AR/EN toggle, timings shown.</span></div>
@@ -476,7 +477,7 @@
 
     <section class="card" id="how">
       <h2>How it works</h2>
-      <p class="sub">Three steps. No cloud pipeline.</p>
+      <p class="sub">Three steps. No cloud pipeline — the optional Colab T4 backend is your choice.</p>
       <div class="steps">
         <div class="step">
           <div>
@@ -554,7 +555,7 @@
       <h2>Be clear about limits</h2>
       <p class="sub">Honest beta notes.</p>
       <ul>
-        <li>No subtitle file? The app transcribes English audio offline (beta); the server addon does the same with <code>--stt</code> — non-English audio stays pending</li>
+        <li>No subtitle file? The app transcribes English audio offline (beta); the server addon does the same with <code>--stt</code> — true full-movie Arabic transcription for any language is the optional <a href="https://github.com/muxd22-alt/SubArabify/blob/main/colab/app.ipynb">Colab T4 backend</a> (<code>colab/client.py</code>, ~15–20 min for a 2 h movie)</li>
         <li>Model downloads once (needs network that first time), then 100% offline; repeats served from memory</li>
         <li>Current APK is a debug-signed beta from CI, not a Play Store build</li>
       </ul>
@@ -562,7 +563,7 @@
 
     <footer>
       <p>
-        <img src="icon.jpg" alt="" />SubArabify v1.0.3-beta · on-device, open source<br />
+        <img src="icon.jpg" alt="" />SubArabify v1.0.4-pre · on-device, open source<br />
         <a href="https://github.com/muxd22-alt/SubArabify">github.com/muxd22-alt/SubArabify</a>
         ·
         <a href="SubArabify-latest.apk" download>Direct APK</a>

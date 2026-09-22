@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.0.4-pre — Colab T4 full-movie transcription
+
+Transcribe whole movies straight into Arabic `.srt` on a **free Google Colab T4 GPU** —
+for the videos (or languages) the tiny on-device models can't do justice.
+
+**Backend — [`colab/app.ipynb`](colab/app.ipynb) (open in Colab → Runtime → Run all)**
+- Installs Hugging Face `transformers` + torch and loads
+  `samil24/whisper-large-arabic-dialects-v5` — a Whisper large-v3 fine-tune for Arabic
+  dialects — on the T4 in fp16. (faster-whisper can't load raw HF checkpoints, so this
+  uses `transformers`, exactly as the model card shows.)
+- FastAPI server on the Colab VM, exposed via a **free Cloudflare quick tunnel**
+  (no signup) with a pyngrok fallback when `NGROK_AUTHTOKEN` is set.
+- **Async job API** for movies: `POST /jobs` (multipart) or `POST /jobs/url` (direct
+  audio link, e.g. YouTube/mux dumps) → `job_id`; `GET /jobs/{id}` progress; 
+  `GET /jobs/{id}/srt` result; short clips can use the blocking `POST /transcribe`.
+- Transcribes in **5-min overlapping windows** (midpoint-stitched to never drop a word)
+  with real %/ETA progress — a 2 h movie ≈ 15–20 min on a T4.
+
+**Client — [`colab/client.py`](colab/client.py)** (Python, only needs `requests` + ffmpeg)
+- ffmpeg: video → 16 kHz mono WAV (same recipe as `stt.py`); auto-compresses to Opus
+  when >90 MB (Cloudflare quick tunnels reject ~100 MB bodies; `--transport` to force).
+- Upload → poll → download → run through `srtcore` → same branded
+  `Movie.SubArabify.ar.srt` next to the video (same rules as app + addon).
+- **Timeout-safe**: per-request timeouts, transient-poll tolerance, watchdog on upload,
+  overall `--timeout` deadline (90 min default), and `--job <id>` resume after a
+  disconnect or Colab session change.
+
+**Housekeeping**
+- Version bumped to `1.0.4-pre` (versionCode 5) across app, site, Jellyfin manifest, CI artifacts.
+- CI now self-tests `colab/test_client.py` (mock backend + real ffmpeg e2e on runners).
+
 ## 1.0.3-beta — speech-to-text update
 
 No subtitle file? The app/server now listens (WhisperSubs-style, fully offline).

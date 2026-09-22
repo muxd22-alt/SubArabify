@@ -1,12 +1,15 @@
-# SubArabify — v1.0.3-beta
+# SubArabify — v1.0.4-pre
 
 ![SubArabify icon](docs/icon.jpg)
 
 **Automatic Arabic subtitles on your phone — offline, folder-first, privacy-first.**
+**And now: full-movie Arabic transcription on a free Google Colab T4 GPU.**
 
 Pick a media folder. SubArabify finds English `.srt`/`.vtt` files next to your videos,
 translates them on-device, and writes a player-ready Arabic file beside each video —
 with timings copied **bit-identical** and an in-app preview that looks like normal subtitles.
+No subtitle at all? Run the optional **Colab backend** (`colab/`) to hear the whole movie
+in Arabic with `samil24/whisper-large-arabic-dialects-v5` on a free T4.
 
 ---
 
@@ -18,6 +21,7 @@ with timings copied **bit-identical** and an in-app preview that looks like norm
 | **Landing page** | [muxd22-alt.github.io/SubArabify](https://muxd22-alt.github.io/SubArabify/) |
 | **Source** | [github.com/muxd22-alt/SubArabify](https://github.com/muxd22-alt/SubArabify) |
 | **Jellyfin addon** | [`jellyfin-addon/`](jellyfin-addon/) — same engine for your media server / Termux |
+| **Colab T4 backend** | [`colab/app.ipynb`](colab/app.ipynb) — free-GPU full-movie Arabic transcription |
 
 Built automatically on every push to `main` and published to GitHub Pages (same APK the site's Download button serves).
 
@@ -25,7 +29,30 @@ Built automatically on every push to `main` and published to GitHub Pages (same 
 
 ---
 
-## What's smarter in 1.0.3-beta
+## What's new in 1.0.4-pre — Colab T4 full-movie transcription
+
+Squeeze the big Arabic model onto hardware that can run it. Your phone stays light;
+a free Colab T4 does the listening.
+
+1. **Open the notebook** — [colab.app.ipynb](https://colab.research.google.com/github/muxd22-alt/SubArabify/blob/main/colab/app.ipynb) →
+   **Runtime → Run all** (GPU/T4). It installs Hugging Face `transformers` + FastAPI, loads
+   `samil24/whisper-large-arabic-dialects-v5` (a Whisper large-v3 fine-tune for Arabic dialects),
+   and opens a **free public URL** (Cloudflare quick tunnel — no account; pyngrok fallback).
+2. **Transcribe a movie from your machine**:
+   ```bash
+   python colab/client.py "My Movie.mkv" --url https://xxxx.trycloudflare.com
+   ```
+   The client ffmpeg-extracts the 16 kHz mono track, uploads it, and polls the async job
+   (a 2 h movie ≈ **15–20 min** on the T4 — real % progress + ETA). Keep the notebook tab open.
+3. **Resume-proof**: transient tunnel failures are auto-retried; if everything dies, re-run with
+   `python colab/client.py --url $URL --job <job_id> --save-to "My Movie.mkv"`.
+4. **Same output rules, everywhere** — the returned `.srt` runs through `srtcore`, so the file is
+   written next to the video as `Movie.SubArabify.ar.srt` with identical branding/timecode safety.
+
+API: `POST /jobs` (upload) or `POST /jobs/url` (direct link) → `GET /jobs/{id}` progress →
+`GET /jobs/{id}/srt`; plus a small-clips `POST /transcribe`. Full docs in [`colab/README.md`](colab/README.md).
+
+## What's smarter in 1.0.3-beta (previous release)
 
 | Old complaint | Fix |
 |---|---|
@@ -69,6 +96,7 @@ put a full `Movie.en.srt` beside the video and tap **Redo**.
 | Offline translation | ML Kit EN→AR on device after the model downloads once |
 | Offline speech-to-text | Vosk small-en & whisper.cpp transcribe videos with no subtitles (beta, English audio) |
 | Local LLM Translation | 2-stage whisper.cpp + llama.cpp / Qwen 2.5 1.5B (GGUF Q4_K_M) batched translation pipeline |
+| Colab T4 transcription | Optional free-GPU backend: full-movie **Arabic** ASR via `samil24/whisper-large-arabic-dialects-v5` — notebook + client in [`colab/`](colab/) |
 | Translation memory | Repeated lines cached on disk across runs — no re-translate lag |
 | In-app preview | Cues rendered like a real player, AR/EN toggle |
 | Background scans | WorkManager at your interval (15 min – 6 hours) |
@@ -102,7 +130,7 @@ paste the `manifest.json` URL, not a GitHub page link):
 https://muxd22-alt.github.io/SubArabify/jellyfin-manifest.json
 ```
 
-Shows the SubArabify icon + 1.0.3-beta; enabling = running the companion above.
+Shows the SubArabify icon + 1.0.4-pre; enabling = running the companion above.
 
 ## Architecture
 
@@ -126,7 +154,12 @@ jellyfin-addon/
 ├── stt.py                    # Server STT fallback (ffmpeg + faster-whisper)
 ├── whisper_cpp.py            # whisper.cpp engine wrapper (16kHz WAV -> JSON transcript)
 ├── llm_translator.py         # llama.cpp / Qwen 2.5 1.5B GGUF batch translation wrapper
-└── manifest.json             # Jellyfin plugin-repository manifest (1.0.3-beta)
+└── manifest.json             # Jellyfin plugin-repository manifest (1.0.4-pre)
+colab/
+├── app.ipynb                 # Free-GPU backend: FastAPI + samil24 Arabic Whisper + tunnel (run in Colab)
+├── client.py                 # Video → 16 kHz WAV → submit/poll/download → branded .srt (resume-capable)
+├── test_client.py            # Self-tests against a mock backend; ffmpeg e2e when available
+└── requirements.txt          # client deps (requests only)
 ```
 
 ## Building locally

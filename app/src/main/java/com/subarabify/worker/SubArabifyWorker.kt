@@ -16,7 +16,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Smart background worker (1.0.3-beta):
+ * Smart background worker (1.0.4-pre):
  *  1. Scans the user-selected media folder recursively
  *  2. For each video (or a single TARGET_BASE):
  *     a) Output exists → DONE (unless FORCE_RETRANSLATE)

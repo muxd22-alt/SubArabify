@@ -18,7 +18,7 @@ private data class TranslationJob(
 )
 
 /**
- * Smart on-device EN→AR translator (1.0.3-beta).
+ * Smart on-device EN→AR translator (1.0.4-pre).
  *
  * Fixes the two big complaints about v1.0:
  *  1. "Translation is wrong" — single words out of context translate badly.

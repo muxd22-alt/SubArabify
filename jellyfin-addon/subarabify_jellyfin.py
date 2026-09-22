@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SubArabify Jellyfin addon — on-server EN→AR subtitles (v1.0.3-beta).
+"""SubArabify Jellyfin addon — on-server EN→AR subtitles (v1.0.4-pre).
 
 Runs natively on a normal media server AND on Android via Termux
 (no .NET needed — pure Python, so Termux works out of the box).

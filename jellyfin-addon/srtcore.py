@@ -1,4 +1,4 @@
-"""Shared SRT core for the SubArabify Jellyfin addon (v1.0.3-beta).
+"""Shared SRT core for the SubArabify Jellyfin addon (v1.0.4-pre).
 
 Parity rules with app/src/main/java/com/subarabify/data/SrtParser.kt:
   * dialogue timecodes are NEVER modified — copied bit-identical
@@ -11,10 +11,10 @@ import re
 import unicodedata
 
 BRAND_LINE = "— SubArabify —"
-APP_VERSION = "1.0.3-beta"
+APP_VERSION = "1.0.4-pre"
 
 THINKER_NOTE = """NOTE
-SubArabify 1.0.3-beta · for thinkers
+SubArabify 1.0.4-pre · for thinkers
 We mark the edges. The middle stays free — your dialogue, uninterrupted.
 Timings below are bit-identical to the English source; only the brand cues are added.
 If you are reading this, you already know why the filename says SubArabify.

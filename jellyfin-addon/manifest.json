@@ -9,10 +9,10 @@
     "imageUrl": "https://muxd22-alt.github.io/SubArabify/icon.jpg",
     "versions": [
       {
-        "version": "1.0.3-beta",
-        "changelog": "1.0.3-beta: smart chunked translation, persistent memory, timing-safe branding, Termux support, VTT input.",
+        "version": "1.0.4-pre",
+        "changelog": "1.0.4-pre: optional Colab T4 full-movie Arabic transcription backend (samil24/whisper-large-arabic-dialects-v5) + client; async jobs + timing-safe branding.",
         "targetAbi": "net8.0",
-        "sourceUrl": "https://muxd22-alt.github.io/SubArabify/subarabify-jellyfin-addon-1.0.3-beta.zip",
+        "sourceUrl": "https://muxd22-alt.github.io/SubArabify/subarabify-jellyfin-addon-1.0.4-pre.zip",
         "checksum": "__CHECKSUM__",
         "timestamp": "__TIMESTAMP__"
       }

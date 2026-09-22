@@ -1,4 +1,4 @@
-"""Offline speech-to-text for the SubArabify Jellyfin addon (v1.0.3-beta).
+"""Offline speech-to-text for the SubArabify Jellyfin addon (v1.0.4-pre).
 
 Used only when a video has NO usable subtitle file (WhisperSubs-style
 fallback): extract 16 kHz mono audio with ffmpeg (Jellyfin's bundled

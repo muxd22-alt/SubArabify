@@ -1,4 +1,4 @@
-"""whisper.cpp engine wrapper for SubArabify (v1.0.3-beta).
+"""whisper.cpp engine wrapper for SubArabify (v1.0.4-pre).
 
 Executes local whisper.cpp binary (e.g. whisper-cli) to transcribe audio/video
 into JSON formatted transcript with timestamps.

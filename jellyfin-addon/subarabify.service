@@ -1,5 +1,5 @@
 [Unit]
-Description=SubArabify Jellyfin addon — on-server AR subtitles (1.0.3-beta)
+Description=SubArabify Jellyfin addon — on-server AR subtitles (1.0.4-pre)
 After=network-online.target jellyfin.service
 Wants=network-online.target
 

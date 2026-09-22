@@ -1,4 +1,4 @@
-# SubArabify Jellyfin addon — v1.0.3-beta
+# SubArabify Jellyfin addon — v1.0.4-pre
 
 On-server Arabic subtitles for your whole Jellyfin library. Runs on a normal
 media server **and** on Android via **Termux** (pure Python — no .NET needed).
@@ -15,7 +15,7 @@ Jellyfin **Repositories** only accept a `manifest.json` URL — a
 https://muxd22-alt.github.io/SubArabify/jellyfin-manifest.json
 ```
 
-You'll see **SubArabify Arabic Subtitles 1.0.3-beta with the app icon** and
+You'll see **SubArabify Arabic Subtitles 1.0.4-pre with the app icon** and
 version info. Then **enable it by running the companion** (one command below) —
 Jellyfin's catalog can only Install `.NET` plugins, and this addon is a native
 Python companion (that's what makes Termux possible), so the repository entry
@@ -62,7 +62,7 @@ Systemd: copy `subarabify.service` to `/etc/systemd/system/`, edit the
 ## Jellyfin plugin repository
 
 `manifest.json` in this folder is the Jellyfin repository manifest template
-(array format, stable guid, `imageUrl` = the SubArabify icon, version 1.0.3-beta).
+(array format, stable guid, `imageUrl` = the SubArabify icon, version 1.0.4-pre).
 CI fills in the real zip checksum + timestamp and publishes it at
 `https://muxd22-alt.github.io/SubArabify/jellyfin-manifest.json` — that is the
 URL to paste into Jellyfin → Repositories. Because this addon is a native
@@ -79,7 +79,7 @@ you icon + version/discovery while enabling = running the companion above.
 | `whisper_cpp.py` | whisper.cpp wrapper (16kHz WAV extraction -> `whisper-cli` JSON transcription) |
 | `llm_translator.py` | llama.cpp / Qwen 2.5 1.5B (GGUF Q4_K_M) batch subtitle translation module |
 | `requirements.txt` | transformers + torch CPU + helpers |
-| `manifest.json` | Jellyfin plugin-repository manifest (1.0.3-beta) |
+| `manifest.json` | Jellyfin plugin-repository manifest (1.0.4-pre) |
 | `run-termux.sh` | Android Termux installer/runner |
 | `subarabify.service` | systemd unit for normal servers |
 

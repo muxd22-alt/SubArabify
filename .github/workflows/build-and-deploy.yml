@@ -34,8 +34,8 @@ jobs:
           cp docs/index.html public/index.html
           cp docs/icon.jpg public/icon.jpg
           cp app/build/outputs/apk/release/*.apk public/SubArabify-latest.apk
-          cp public/SubArabify-latest.apk "public/SubArabify-1.0.3-beta.apk"
-          zip -r public/subarabify-jellyfin-addon-1.0.3-beta.zip jellyfin-addon \
+          cp public/SubArabify-latest.apk "public/SubArabify-1.0.4-pre.apk"
+          zip -r public/subarabify-jellyfin-addon-1.0.4-pre.zip jellyfin-addon \
             -x 'jellyfin-addon/.cache/*' 'jellyfin-addon/__pycache__/*'
 
       - name: Self-test Jellyfin addon core
@@ -43,11 +43,16 @@ jobs:
           python3 jellyfin-addon/test_srtcore.py
           python3 jellyfin-addon/test_stt.py
 
+      - name: Self-test Colab client (uses the system ffmpeg end-to-end)
+        run: |
+          python3 -m pip install -q requests
+          python3 colab/test_client.py
+
       - name: Publish Jellyfin repository manifest (real checksum + timestamp)
         run: |
           python3 - <<'EOF'
           import hashlib, datetime, pathlib
-          zf = pathlib.Path("public/subarabify-jellyfin-addon-1.0.3-beta.zip")
+          zf = pathlib.Path("public/subarabify-jellyfin-addon-1.0.4-pre.zip")
           sha = hashlib.sha256(zf.read_bytes()).hexdigest()
           ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
           tpl = pathlib.Path("jellyfin-addon/manifest.json").read_text(encoding="utf-8")

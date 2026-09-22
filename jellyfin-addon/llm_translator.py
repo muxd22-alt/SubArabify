@@ -1,4 +1,4 @@
-"""llama.cpp / Qwen 2.5 1.5B batch translation module for SubArabify (v1.0.3-beta).
+"""llama.cpp / Qwen 2.5 1.5B batch translation module for SubArabify (v1.0.4-pre).
 
 Executes local llama.cpp wrapper (e.g. llama-cli) using Qwen 2.5 1.5B Instruct GGUF model
 (Q4_K_M) with batched JSON prompts for high-throughput, contextual Arabic subtitle translation.

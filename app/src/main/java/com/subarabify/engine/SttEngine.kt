@@ -17,7 +17,7 @@ import java.net.URL
 import java.util.zip.ZipInputStream
 
 /**
- * On-device English speech-to-text (1.0.3-beta, STT fallback).
+ * On-device English speech-to-text (1.0.4-pre, STT fallback).
  *
  * When a video has NO usable subtitle file, this engine transcribes the
  * audio track offline with Vosk (small-en, ~40 MB, downloaded once) and

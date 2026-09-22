@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# SubArabify Jellyfin addon — Android Termux installer/runner (v1.0.3-beta)
+# SubArabify Jellyfin addon — Android Termux installer/runner (v1.0.4-pre)
 set -e
 echo "== SubArabify addon for Termux =="
 pkg update -y || true
