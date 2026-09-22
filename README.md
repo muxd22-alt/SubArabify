@@ -44,6 +44,8 @@ Colab → **Runtime → Run all** (GPU = T4). It installs `transformers` + FastA
 boots a FastAPI server behind a **free Cloudflare quick tunnel** (no account; pyngrok
 fallback if `NGROK_AUTHTOKEN` is set). The last cell prints the URL.
 
+*Tip for static domain & faster boot:* Set `CLOUDFLARE_TUNNEL_TOKEN` (or `NGROK_AUTHTOKEN` + `NGROK_DOMAIN`) in Colab secrets to keep a static domain across restarts, and enable Google Drive model caching (`USE_DRIVE_CACHE = True`) to avoid re-downloading models.
+
 ### 2 · Point the app at it
 
 Open the app → **Backend card** → paste the tunnel URL → **Save**. The card flips to
