@@ -1,0 +1,2 @@
+# SubArabify Python client — only needs `requests` + ffmpeg on PATH.
+requests>=2.31

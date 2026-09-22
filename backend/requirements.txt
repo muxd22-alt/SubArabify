@@ -1,0 +1,12 @@
+# SubArabify backend — mirror of the notebook's pip line (for non-Colab runs).
+# In Colab the first cell installs everything; this file documents the deps.
+transformers>=4.45
+accelerate>=0.34
+huggingface_hub>=0.24
+sentencepiece>=0.2
+fastapi>=0.111
+uvicorn[standard]
+python-multipart
+pyngrok
+requests>=2.31
+numpy
