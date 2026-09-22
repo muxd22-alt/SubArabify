@@ -26,7 +26,7 @@ sys.modules["torch"] = _stub_torch
 # --- import cell-03 -------------------------------------------------------
 NB = json.loads((Path(__file__).resolve().parent / "SubArabify_Backend.ipynb")
                 .read_text(encoding="utf-8"))
-CELL3 = "".join(next(c["source"] for c in NB["cells"] if c["id"] == "cell-03"))
+CELL3 = "".join(next(c["source"] for c in NB["cells"] if c.get("id") == "cell-03"))
 NS = {}
 exec(compile(CELL3, "<cell-03>", "exec"), NS)
 
@@ -74,7 +74,11 @@ if not failed:
           == "نص مترجم للاختبار، مع سؤال؟", str(tblocks[0]["lines"]))
     check("translate has both cues", len(tblocks) == 2, str(tblocks))
 
-NS["get_mt"] = ORIG_GET_MT          # transformérs absent -> ImportError in jobs
+def _missing_transformers():
+    raise ImportError("No module named 'transformers'")
+
+
+NS["get_mt"] = _missing_transformers
 
 # ── server wiring through TestClient ──────────────────────────────────────
 from fastapi.testclient import TestClient  # noqa
