@@ -5,11 +5,11 @@ const chokidar = require('chokidar');
 
 // Auto-update check
 try {
-    console.log('[SubArabify] 🔄 Checking for updates from GitHub...');
+    console.log('[SubArabify] \ud83d\udd04 Checking for updates from GitHub...');
     execSync('git pull --rebase', { stdio: 'inherit', cwd: __dirname });
-    console.log('[SubArabify] ✅ Up to date!');
+    console.log('[SubArabify] \u2705 Up to date!');
 } catch (e) {
-    console.log('[SubArabify] ⚠️ Note: Could not auto-update from git. Skipping.');
+    console.log('[SubArabify] \u26a0\ufe0f Note: Could not auto-update from git. Skipping.');
 }
 
 const PUTER_TOKEN = process.env.PUTER_AUTH_TOKEN || '';
@@ -40,7 +40,7 @@ function parseSRT(data) {
 }
 
 function buildSRT(cues) {
-  let srt = `1\n00:00:01,000 --> 00:00:04,000\n[ ترجمت الأداة ساب أرابيفاي — مدعوم من Puter.js ]\n\n`;
+  let srt = `1\n00:00:01,000 --> 00:00:04,000\n[ \u062a\u0631\u062c\u0645\u062a \u0627\u0644\u0623\u062f\u0627\u0629 \u0633\u0627\u0628 \u0623\u0631\u0627\u0628\u064a\u0641\u0627\u064a \u2014 \u0645\u062f\u0639\u0648\u0645 \u0645\u0646 Puter.js ]\n\n`;
   cues.forEach((cue, idx) => {
     srt += `${idx + 2}\n${cue.start} --> ${cue.end}\n${cue.text}\n\n`;
   });
@@ -108,41 +108,103 @@ ${textChunk}`;
   console.log(`[Success] Subtitle saved: ${targetArSrtPath}`);
 }
 
-const os = require('os');
+// Timestamp helpers for chunk offset merging
+function timeToMs(t) {
+  const [hms, ms] = t.trim().split(',');
+  const [h, m, s] = hms.split(':').map(Number);
+  return (h * 3600 + m * 60 + s) * 1000 + Number(ms);
+}
+function msToTime(d) {
+  const ms = d % 1000;
+  const s = Math.floor((d / 1000) % 60);
+  const m = Math.floor((d / (1000 * 60)) % 60);
+  const h = Math.floor(d / (1000 * 60 * 60));
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms).padStart(3,'0')}`;
+}
 
-// 3. Puter.js Audio-to-Subtitle Fallback
+// 3. Puter.js Audio-to-Subtitle Fallback (chunked for 25MB limit)
 async function transcribeAudioWithPuter(videoPath, targetArSrtPath) {
-  console.log(`[FFmpeg] No matching source .srt found. Extracting audio from ${path.basename(videoPath)}...`);
-  
-  // Use a local tmp folder in the media directory instead of relying on os.tmpdir() which fails in Termux
+  console.log(`[FFmpeg] No matching source .srt found. Extracting & chunking audio from ${path.basename(videoPath)}...`);
+
   const tmpFolder = path.join(path.dirname(videoPath), '.subarabify_tmp');
   if (!fs.existsSync(tmpFolder)) fs.mkdirSync(tmpFolder);
-  const tempWav = path.join(tmpFolder, `temp_${Date.now()}.wav`);
+
+  // Split audio into 30-minute compressed MP3 chunks (~15MB each, well under 25MB)
+  const stamp = Date.now();
+  const chunkPattern = path.join(tmpFolder, `chunk_${stamp}_%03d.mp3`);
+  const SEGMENT_SECS = 1800; // 30 minutes
 
   try {
-    execSync(`ffmpeg -y -i "${videoPath}" -vn -ar 16000 -ac 1 "${tempWav}"`, { stdio: 'ignore' });
+    execSync(`ffmpeg -y -i "${videoPath}" -vn -c:a libmp3lame -b:a 32k -f segment -segment_time ${SEGMENT_SECS} "${chunkPattern}"`, { stdio: 'ignore' });
 
-    console.log(`[Puter.js] Transcribing & translating audio...`);
-    
-    const result = await withRetry(
-      () => {
-        const audioData = fs.readFileSync(tempWav);
-        const audioBase64 = audioData.toString('base64');
-        const audioDataUri = `data:audio/wav;base64,${audioBase64}`;
-        return puter.ai.speech2txt({ file: audioDataUri, model: 'whisper-1', translate: true });
-      },
-      2,
-      "Speech-to-text"
-    );
+    const chunkFiles = fs.readdirSync(tmpFolder)
+      .filter(f => f.startsWith(`chunk_${stamp}_`))
+      .sort();
 
-    if (fs.existsSync(tempWav)) fs.unlinkSync(tempWav);
+    console.log(`[Puter.js] Split into ${chunkFiles.length} audio chunk(s). Transcribing...`);
 
-    const singleCue = [{ start: '00:00:05,000', end: '00:00:15,000', text: result.text || result }];
-    fs.writeFileSync(targetArSrtPath, buildSRT(singleCue), 'utf8');
-    console.log(`[Success] Transcription saved: ${targetArSrtPath}`);
+    let allCues = [];
+
+    for (let i = 0; i < chunkFiles.length; i++) {
+      const chunkPath = path.join(tmpFolder, chunkFiles[i]);
+      console.log(`[Puter.js] Transcribing chunk ${i + 1}/${chunkFiles.length}...`);
+
+      try {
+        const result = await withRetry(
+          () => {
+            const audioData = fs.readFileSync(chunkPath);
+            const audioDataUri = `data:audio/mp3;base64,${audioData.toString('base64')}`;
+            return puter.ai.speech2txt({ file: audioDataUri, model: 'whisper-1', translate: true });
+          },
+          2,
+          `Chunk ${i + 1}`
+        );
+
+        // Offset timestamps by chunk position
+        const offsetMs = i * SEGMENT_SECS * 1000;
+        const rawText = result.text || String(result);
+
+        if (rawText && rawText.trim().length > 0) {
+          // Whisper returns plain text; create evenly-spaced subtitle cues
+          const words = rawText.trim().split(/\s+/);
+          const wordsPerCue = 12;
+          const totalCuesInChunk = Math.ceil(words.length / wordsPerCue);
+          const cueDuration = Math.floor((SEGMENT_SECS * 1000) / Math.max(totalCuesInChunk, 1));
+
+          for (let c = 0; c < totalCuesInChunk; c++) {
+            const cueWords = words.slice(c * wordsPerCue, (c + 1) * wordsPerCue).join(' ');
+            const cueStart = offsetMs + c * cueDuration;
+            const cueEnd = Math.min(cueStart + cueDuration - 100, offsetMs + SEGMENT_SECS * 1000);
+            allCues.push({
+              start: msToTime(cueStart),
+              end: msToTime(cueEnd),
+              text: cueWords
+            });
+          }
+        }
+      } catch (chunkErr) {
+        console.error(`[Puter Error] Chunk ${i + 1} permanently failed. Skipping this chunk.`);
+      }
+
+      // Clean up chunk file immediately to save phone storage
+      try { fs.unlinkSync(chunkPath); } catch(e) {}
+    }
+
+    if (allCues.length > 0) {
+      fs.writeFileSync(targetArSrtPath, buildSRT(allCues), 'utf8');
+      console.log(`[Success] Transcription saved (${allCues.length} cues): ${targetArSrtPath}`);
+    } else {
+      console.error(`[Puter Speech Error] No speech detected in any chunk.`);
+    }
+
   } catch (err) {
-    console.error(`[Puter Speech Error] Fatal error in transcription.`);
-    if (fs.existsSync(tempWav)) fs.unlinkSync(tempWav);
+    console.error(`[Puter Speech Error] Fatal error in transcription:`, err.message);
+    // Cleanup any leftover chunk files
+    try {
+      fs.readdirSync(tmpFolder)
+        .filter(f => f.startsWith(`chunk_${stamp}_`))
+        .forEach(f => { try { fs.unlinkSync(path.join(tmpFolder, f)); } catch(e) {} });
+    } catch(e) {}
   }
 }
 
@@ -182,11 +244,11 @@ async function start() {
         if (PUTER_TOKEN) {
             puter.setAuthToken(PUTER_TOKEN);
         } else {
-            console.log('[SubArabify] ⚠️  لم يتم تعيين PUTER_AUTH_TOKEN — سيتم محاولة المصادقة التلقائية');
+            console.log('[SubArabify] \u26a0\ufe0f  \u0644\u0645 \u064a\u062a\u0645 \u062a\u0639\u064a\u064a\u0646 PUTER_AUTH_TOKEN \u2014 \u0633\u064a\u062a\u0645 \u0645\u062d\u0627\u0648\u0644\u0629 \u0627\u0644\u0645\u0635\u0627\u062f\u0642\u0629 \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629');
         }
     } catch (e) {
-        console.error('[SubArabify] ❌ خطأ في تهيئة Puter.js:', e.message);
-        console.log('[SubArabify] 💡 تأكد من تثبيت الحزم: npm install');
+        console.error('[SubArabify] \u274c \u062e\u0637\u0623 \u0641\u064a \u062a\u0647\u064a\u0626\u0629 Puter.js:', e.message);
+        console.log('[SubArabify] \ud83d\udca1 \u062a\u0623\u0643\u062f \u0645\u0646 \u062a\u062b\u0628\u064a\u062a \u0627\u0644\u062d\u0632\u0645: npm install');
         process.exit(1);
     }
 
