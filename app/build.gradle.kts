@@ -11,8 +11,8 @@ android {
         applicationId = "com.subarabify"
         minSdk = 26
         targetSdk = 35
-        versionCode = 23
-        versionName = "0.2.3-alpha"
+        versionCode = 25
+        versionName = "2.0.5-beta"
 
         ndk {
             abiFilters += setOf("arm64-v8a")

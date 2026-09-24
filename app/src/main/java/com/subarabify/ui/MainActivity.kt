@@ -160,6 +160,27 @@ class MainActivity : ComponentActivity() {
                 Divider(color = Color(0xFF30363D), thickness = 1.dp)
                 Spacer(modifier = Modifier.height(16.dp))
 
+                Button(
+                    onClick = { 
+                        val launchIntent = LocalContext.current.packageManager.getLaunchIntentForPackage("com.termux")
+                        if (launchIntent != null) {
+                            LocalContext.current.startActivity(launchIntent)
+                        } else {
+                            Toast.makeText(LocalContext.current, "الرجاء تثبيت تيرمكس أولاً", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD29922)),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+                ) {
+                    Text("تشغيل محرك الترجمة (تيرمكس)", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     val grouped = itemList.groupBy { it.folderName }
                     grouped.forEach { (folder, items) ->

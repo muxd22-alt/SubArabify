@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const chokidar = require('chokidar');
-const { puter } = require('@heyputer/puter.js');
+const puter = require('@heyputer/puter.js');
 
 // Parse --media folder argument (defaults to /sdcard/Movies)
 const args = process.argv.slice(2);
