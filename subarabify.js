@@ -3,6 +3,19 @@ const path = require('path');
 const { execSync } = require('child_process');
 const chokidar = require('chokidar');
 
+// Polyfill patch for @heyputer/puter.js/src/lib/polyfills/xhrshim.js
+// Prevents TypeError when server response headers miss 'content-type'
+if (typeof globalThis.Headers !== 'undefined' && globalThis.Headers.prototype && globalThis.Headers.prototype.get) {
+    const origGet = globalThis.Headers.prototype.get;
+    globalThis.Headers.prototype.get = function(name) {
+        const val = origGet.call(this, name);
+        if (val === null && typeof name === 'string' && name.toLowerCase() === 'content-type') {
+            return '';
+        }
+        return val;
+    };
+}
+
 // Auto-update check
 try {
     console.log('[SubArabify] \ud83d\udd04 Checking for updates from GitHub...');
@@ -60,6 +73,20 @@ async function withRetry(fn, maxRetries = 3, contextMsg = "") {
   }
 }
 
+// Helper to extract text safely from Puter API response
+function extractResponseText(res) {
+  if (!res) return '';
+  if (typeof res === 'string') return res;
+  if (res.text && typeof res.text === 'string') return res.text;
+  if (res.message && res.message.content) {
+    if (typeof res.message.content === 'string') return res.message.content;
+    if (Array.isArray(res.message.content)) {
+      return res.message.content.map(c => typeof c === 'string' ? c : (c.text || '')).join('');
+    }
+  }
+  return String(res);
+}
+
 // 2. Puter.js Keyless Translation Logic
 async function translateSRTWithPuter(engSrtPath, targetArSrtPath) {
   console.log(`[Puter.js] Parsing ${path.basename(engSrtPath)}...`);
@@ -89,7 +116,8 @@ ${textChunk}`;
           "Translation chunk"
       );
       
-      const arLines = res.toString().trim().split('---').map(l => l.trim());
+      const resText = extractResponseText(res);
+      const arLines = resText.trim().split('---').map(l => l.trim());
 
       chunk.forEach((cue, idx) => {
         translatedCues.push({
@@ -99,7 +127,7 @@ ${textChunk}`;
         });
       });
     } catch (err) {
-      console.error(`[Fatal] Chunk translation permanently failed. Skipping file.`);
+      console.error(`[Fatal] Chunk translation permanently failed. Skipping file: ${err.message}`);
       return;
     }
   }
@@ -162,7 +190,7 @@ async function transcribeAudioWithPuter(videoPath, targetArSrtPath) {
 
         // Offset timestamps by chunk position
         const offsetMs = i * SEGMENT_SECS * 1000;
-        const rawText = result.text || String(result);
+        const rawText = extractResponseText(result);
 
         if (rawText && rawText.trim().length > 0) {
           // Whisper returns plain text; create evenly-spaced subtitle cues
