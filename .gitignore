@@ -1,0 +1,24 @@
+# Built files
+*.iml
+.gradle/
+local.properties
+.idea/
+*.hprof
+build/
+app/build/
+/MD
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Raw font source (the needed OTFs ship under app/src/main/res/font/)
+thmanyah typeface/
+
+# Keystore
+*.jks
+*.keystore
+
+# Release artifacts already on Pages
+public/
+__pycache__/

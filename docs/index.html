@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SubArabify | Automatic Subtitle Engine</title>
+  <meta name="description" content="A background worker that does the heavy Arabic SRT lifting for your media servers.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="logo">
+      <img src="SubArabify.png" alt="SubArabify Icon" />
+      <span>SUBARABIFY</span>
+    </div>
+    <div class="nav-links" style="display: flex; gap: 15px;">
+      <a href="https://github.com/muxd22-alt/SubArabify/releases/latest" class="btn-primary" style="background-color: #333;">Get Android APK</a>
+      <a href="https://github.com/muxd22-alt/SubArabify" class="btn-primary">View on GitHub</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <h1>Infinite Subtitles. Zero Effort.</h1>
+      <p>The ultimate background worker that does the heavy Arabic SRT lifting for all your movies and TV shows completely offline.</p>
+      <div class="hero-actions" style="display: flex; gap: 20px; justify-content: center;">
+        <a href="#how-it-works" class="btn-primary btn-large">Discover How It Works</a>
+        <a href="https://github.com/muxd22-alt/SubArabify/releases/latest" class="btn-primary btn-large" style="background-color: #4CAF50;">Download Companion APK</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="divider"></div>
+
+    <!-- Section 1: Background Worker -->
+    <section id="how-it-works" class="feature alternate">
+      <div class="feature-text">
+        <h2>Unseen, Unstoppable.</h2>
+        <p>SubArabify operates as a silent background node, running seamlessly without any UI clutter. Point it at your media folder, and it passively hooks into your ecosystem—translating entire libraries while you watch.</p>
+      </div>
+      <div class="feature-visual">
+        <div class="status-card glow-red">
+          <div class="status-header">Background Worker</div>
+          <div class="pulse-ring">
+            <div class="pulse-dot"></div>
+          </div>
+          <div class="status-info">Watching: ~/Movies</div>
+          <div class="status-info">Monitoring: TV Shows</div>
+        </div>
+      </div>
+    </section>
+    
+    <div class="divider"></div>
+
+    <!-- Section 2: Audio & SRT Extraction -->
+    <section class="feature">
+      <div class="feature-text">
+        <h2>No SRT? No Problem.</h2>
+        <p>When English subtitles are included natively, SubArabify instantly bridges the gap via high-speed AI translation. But if a movie has no subtitles? It dynamically hooks into <strong>FFmpeg</strong>, aggressively rips the vocal track, and builds entirely new Arabic subtitles from raw audio.</p>
+      </div>
+      <div class="feature-visual">
+        <div class="code-window">
+          <div class="window-header">
+            <span></span><span></span><span></span>
+          </div>
+          <pre><code>[FFmpeg] Parsing audio track
+[Puter.js] Keyless translation initiated
+[SubArabify] Bridling timed text...
+[Success] Insterstellar.ar.srt saved.</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Section 3: Smart Naming & Episode Logic -->
+    <section class="feature alternate">
+      <div class="feature-text">
+        <h2>Ruthlessly Smart Detection.</h2>
+        <p>Your library is messy. SubArabify doesn't care. It recursively detects TV series hierarchies, flawlessly maps weirdly-named files to their corresponding `eng.srt`, or intelligently matches them to the exact TV episode name dynamically. Every file mapped flawlessly.</p>
+      </div>
+      <div class="feature-visual">
+        <div class="file-tree">
+          <div class="folder">📺 Breaking Bad / Season 1</div>
+          <div class="file video">S01E01_Pilot.mkv</div>
+          <div class="file subtitle added">↳ S01E01_Pilot.SubArabify.ar.srt</div>
+          <div class="file video">S01E02_Cats_in_the_bag.mp4</div>
+          <div class="file subtitle scan">↳ Processing...</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Section 4: Skips Old Work -->
+    <section class="feature">
+      <div class="feature-text">
+        <h2>Never Works Twice.</h2>
+        <p>Why waste compute on what's already done? SubArabify actively hashes file trees to detect existing Arabic translations. If the heavy lifting is already verified, it instantly skips the file, conserving maximum resources for unmatched speed.</p>
+      </div>
+      <div class="feature-visual centered-visual">
+        <div class="skip-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+          <h3>Already Arabic</h3>
+          <p>Scan skipped.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="divider"></div>
+
+  <footer>
+    <p>Powered by Puter.js — Zero Backend. All Impact.</p>
+    <a href="https://github.com/muxd22-alt/SubArabify">Deploy the Pipeline</a>
+  </footer>
+
+</body>
+</html>

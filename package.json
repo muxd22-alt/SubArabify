@@ -1,0 +1,16 @@
+{
+  "name": "subarabify-puter",
+  "version": "2.0.0",
+  "description": "SubArabify Puter.js Edition",
+  "main": "subarabify.js",
+  "scripts": {
+    "start": "node subarabify.js"
+  },
+  "dependencies": {
+    "@heyputer/puter.js": "^1.0.0",
+    "chokidar": "^3.6.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
