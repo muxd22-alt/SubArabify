@@ -3,24 +3,18 @@ const path = require('path');
 const { execSync } = require('child_process');
 const chokidar = require('chokidar');
 
-// Puter.js Node.js initialization
-// Get auth token from: https://puter.com/dashboard
-// Set via: export PUTER_AUTH_TOKEN=your_token_here
-const { init } = require('@heyputer/puter.js/src/init.cjs');
+// Auto-update check
+try {
+    console.log('[SubArabify] 🔄 Checking for updates from GitHub...');
+    execSync('git pull --rebase', { stdio: 'inherit', cwd: __dirname });
+    console.log('[SubArabify] ✅ Up to date!');
+} catch (e) {
+    console.log('[SubArabify] ⚠️ Note: Could not auto-update from git. Skipping.');
+}
+
 const PUTER_TOKEN = process.env.PUTER_AUTH_TOKEN || '';
 
 let puter;
-try {
-    puter = init(PUTER_TOKEN);
-    if (!PUTER_TOKEN) {
-        console.log('[SubArabify] ⚠️  لم يتم تعيين PUTER_AUTH_TOKEN — سيتم محاولة المصادقة التلقائية');
-    }
-} catch (e) {
-    console.error('[SubArabify] ❌ خطأ في تهيئة Puter.js:', e.message);
-    console.log('[SubArabify] 💡 احصل على مفتاح API من: https://puter.com/dashboard');
-    console.log('[SubArabify] 💡 ثم شغل: export PUTER_AUTH_TOKEN=your_token');
-    process.exit(1);
-}
 
 // Parse --media folder argument (defaults to /sdcard/Movies)
 const args = process.argv.slice(2);
@@ -175,9 +169,28 @@ async function processVideoFile(videoPath) {
 }
 
 // Initial full-scan on boot + active watching
-const watcher = chokidar.watch(MEDIA_DIR, { persistent: true, depth: 4, awaitWriteFinish: true });
-watcher.on('add', filePath => {
-  if (['.mp4', '.mkv', '.avi', '.m4v'].includes(path.extname(filePath).toLowerCase())) {
-    processVideoFile(filePath).catch(e => console.error(e));
-  }
-});
+async function start() {
+    try {
+        const puterModule = await import('@heyputer/puter.js');
+        puter = puterModule.default || puterModule;
+        
+        if (PUTER_TOKEN) {
+            puter.setAuthToken(PUTER_TOKEN);
+        } else {
+            console.log('[SubArabify] ⚠️  لم يتم تعيين PUTER_AUTH_TOKEN — سيتم محاولة المصادقة التلقائية');
+        }
+    } catch (e) {
+        console.error('[SubArabify] ❌ خطأ في تهيئة Puter.js:', e.message);
+        console.log('[SubArabify] 💡 تأكد من تثبيت الحزم: npm install');
+        process.exit(1);
+    }
+
+    const watcher = chokidar.watch(MEDIA_DIR, { persistent: true, depth: 4, awaitWriteFinish: true });
+    watcher.on('add', filePath => {
+      if (['.mp4', '.mkv', '.avi', '.m4v'].includes(path.extname(filePath).toLowerCase())) {
+        processVideoFile(filePath).catch(e => console.error(e));
+      }
+    });
+}
+
+start();
