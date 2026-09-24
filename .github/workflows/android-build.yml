@@ -58,15 +58,18 @@ jobs:
         run: gradle assembleRelease
 
       - name: Rename APK
-        run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/SubArabify_${{ github.ref_name }}.apk
+        run: |
+          SAFE_REF=$(echo "${{ github.ref_name }}" | tr '/' '_')
+          echo "SAFE_REF=${SAFE_REF}" >> $GITHUB_ENV
+          mv app/build/outputs/apk/release/app-release.apk "app/build/outputs/apk/release/SubArabify_${SAFE_REF}.apk"
         
       - name: Release APK
         uses: softprops/action-gh-release@v1
         with:
           tag_name: release-${{ github.run_number }}
-          files: app/build/outputs/apk/release/SubArabify_${{ github.ref_name }}.apk
+          files: app/build/outputs/apk/release/SubArabify_${{ env.SAFE_REF }}.apk
           prerelease: true
           generate_release_notes: true
-          name: "ساب أرابيفاي ${{ github.ref_name }} (Build ${{ github.run_number }})"
+          name: "ساب أرابيفاي ${{ env.SAFE_REF }} (Build ${{ github.run_number }})"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
