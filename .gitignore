@@ -22,3 +22,6 @@ thmanyah typeface/
 # Release artifacts already on Pages
 public/
 __pycache__/
+
+# Node dependencies
+node_modules/
