@@ -6,6 +6,7 @@ local.properties
 *.hprof
 build/
 app/build/
+/MD
 
 # OS
 .DS_Store

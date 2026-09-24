@@ -1,3 +1,0 @@
-requests>=2.31
-# Optional — enables --qrcode PNG/ascii rendering (library: https://pypi.org/project/qrcode/)
-qrcode[pil]>=7.4
