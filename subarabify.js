@@ -125,7 +125,12 @@ async function transcribeAudioWithPuter(videoPath, targetArSrtPath) {
     console.log(`[Puter.js] Transcribing & translating audio...`);
     
     const result = await withRetry(
-      () => puter.ai.speech2txt({ file: tempWav, model: 'whisper-1', translate: true }),
+      () => {
+        const audioData = fs.readFileSync(tempWav);
+        const audioBase64 = audioData.toString('base64');
+        const audioDataUri = `data:audio/wav;base64,${audioBase64}`;
+        return puter.ai.speech2txt({ file: audioDataUri, model: 'whisper-1', translate: true });
+      },
       2,
       "Speech-to-text"
     );
