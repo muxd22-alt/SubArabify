@@ -65,5 +65,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: app/build/outputs/apk/release/SubArabify_${{ github.ref_name }}.apk
+          prerelease: true
+          generate_release_notes: true
+          name: "ساب أرابيفاي ${{ github.ref_name }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

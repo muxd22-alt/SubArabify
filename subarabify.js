@@ -2,7 +2,25 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const chokidar = require('chokidar');
-const puter = require('@heyputer/puter.js');
+
+// Puter.js Node.js initialization
+// Get auth token from: https://puter.com/dashboard
+// Set via: export PUTER_AUTH_TOKEN=your_token_here
+const { init } = require('@heyputer/puter.js/src/init.cjs');
+const PUTER_TOKEN = process.env.PUTER_AUTH_TOKEN || '';
+
+let puter;
+try {
+    puter = init(PUTER_TOKEN);
+    if (!PUTER_TOKEN) {
+        console.log('[SubArabify] ⚠️  لم يتم تعيين PUTER_AUTH_TOKEN — سيتم محاولة المصادقة التلقائية');
+    }
+} catch (e) {
+    console.error('[SubArabify] ❌ خطأ في تهيئة Puter.js:', e.message);
+    console.log('[SubArabify] 💡 احصل على مفتاح API من: https://puter.com/dashboard');
+    console.log('[SubArabify] 💡 ثم شغل: export PUTER_AUTH_TOKEN=your_token');
+    process.exit(1);
+}
 
 // Parse --media folder argument (defaults to /sdcard/Movies)
 const args = process.argv.slice(2);
