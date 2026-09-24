@@ -72,23 +72,26 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) {
+            MaterialTheme(colorScheme = darkColorScheme(background = Color(0xFF0D1117))) {
                 Scaffold(
                     topBar = {
                         TopAppBar(
-                            title = { Text("مساعد ساب أرابيفاي", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold) },
+                            title = { Text("مساعد ساب أرابيفاي", color = Color(0xFF00FF7F), fontWeight = FontWeight.ExtraBold, fontSize = 22.sp) },
                             actions = {
                                 IconButton(onClick = { showSetupDialog = true }) {
-                                    Icon(Icons.Default.Settings, contentDescription = "إعداد تيرمكس", tint = Color.White)
+                                    Icon(Icons.Default.Settings, contentDescription = "إعداد تيرمكس", tint = Color.LightGray)
                                 }
                             },
-                            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF1E1E1E))
+                            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF161B22))
                         )
                     }
                 ) { paddingValues ->
                     Surface(
-                        modifier = Modifier.fillMaxSize().padding(paddingValues),
-                        color = MaterialTheme.colorScheme.background
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF0D1117))
+                            .padding(paddingValues),
+                        color = Color.Transparent
                     ) {
                         DashboardScreen()
                         
@@ -104,7 +107,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun DashboardScreen() {
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Button(
@@ -112,35 +115,50 @@ class MainActivity : ComponentActivity() {
                     val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
                     folderPickerLauncher.launch(intent)
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF238636)),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
             ) {
-                Text("اختيار مجلد الوسائط", fontSize = 16.sp)
+                Text("اختيار مجلد الوسائط", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             if (selectedFolder != null) {
-                Text("قيد التتبع: $selectedRawPath", fontSize = 13.sp, color = Color.Gray, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.height(16.dp))
+                Text("قيد التتبع: $selectedRawPath", fontSize = 14.sp, color = Color(0xFF8B949E), textAlign = TextAlign.Center)
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
             if (isScanning) {
-                CircularProgressIndicator(color = Color(0xFF4CAF50))
-                Text("جاري فحص المجلدات والحلقات...", color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                CircularProgressIndicator(color = Color(0xFF00FF7F), strokeWidth = 4.dp)
+                Text("جاري فحص المجلدات والحلقات...", color = Color(0xFF8B949E), modifier = Modifier.padding(top = 12.dp))
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    StatCard("مكتمل", achievedCount, Color(0xFF4CAF50))
-                    StatCard("مفقود", missingCount, Color(0xFFF44336))
+                    StatCard(
+                        "مكتمل", 
+                        achievedCount, 
+                        Color(0xFF3FB950), 
+                        Color(0xFF238636).copy(alpha = 0.2f),
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatCard(
+                        "مفقود", 
+                        missingCount, 
+                        Color(0xFFFF7B72), 
+                        Color(0xFFDA3633).copy(alpha = 0.2f),
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
+                Spacer(modifier = Modifier.height(24.dp))
+                Divider(color = Color(0xFF30363D), thickness = 1.dp)
                 Spacer(modifier = Modifier.height(16.dp))
-                Divider(color = Color.DarkGray)
-                Spacer(modifier = Modifier.height(8.dp))
 
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     val grouped = itemList.groupBy { it.folderName }
@@ -238,20 +256,21 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun StatCard(title: String, count: Int, color: Color) {
+    fun StatCard(title: String, count: Int, accentColor: Color, bgColor: Color, modifier: Modifier = Modifier) {
         Card(
-            modifier = Modifier.size(130.dp, 90.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF2C2C2C)),
-            shape = RoundedCornerShape(12.dp)
+            modifier = modifier.height(110.dp),
+            colors = CardDefaults.cardColors(containerColor = bgColor),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(title, color = color, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(count.toString(), color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+                Text(title, color = accentColor, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(count.toString(), color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold)
             }
         }
     }
@@ -261,18 +280,18 @@ class MainActivity : ComponentActivity() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp, horizontal = 8.dp)
-                .background(Color(0xFF222222), RoundedCornerShape(8.dp))
-                .padding(12.dp),
+                .padding(vertical = 6.dp, horizontal = 4.dp)
+                .background(Color(0xFF161B22), RoundedCornerShape(12.dp))
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(10.dp)
-                    .background(if (item.isAchieved) Color(0xFF4CAF50) else Color(0xFFF44336), RoundedCornerShape(5.dp))
+                    .size(12.dp)
+                    .background(if (item.isAchieved) Color(0xFF3FB950) else Color(0xFFFF7B72), RoundedCornerShape(6.dp))
             )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(item.name, color = Color.LightGray, fontSize = 13.sp)
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(item.name, color = Color(0xFFC9D1D9), fontSize = 14.sp, fontWeight = FontWeight.Medium)
         }
     }
 

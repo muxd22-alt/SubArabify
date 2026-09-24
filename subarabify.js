@@ -96,13 +96,18 @@ ${textChunk}`;
   console.log(`[Success] Subtitle saved: ${targetArSrtPath}`);
 }
 
+const os = require('os');
+
 // 3. Puter.js Audio-to-Subtitle Fallback
 async function transcribeAudioWithPuter(videoPath, targetArSrtPath) {
   console.log(`[FFmpeg] No matching source .srt found. Extracting audio from ${path.basename(videoPath)}...`);
-  const tempWav = path.join('/tmp', `temp_${Date.now()}.wav`);
+  
+  // Use a local tmp folder in the media directory instead of relying on os.tmpdir() which fails in Termux
+  const tmpFolder = path.join(path.dirname(videoPath), '.subarabify_tmp');
+  if (!fs.existsSync(tmpFolder)) fs.mkdirSync(tmpFolder);
+  const tempWav = path.join(tmpFolder, `temp_${Date.now()}.wav`);
 
   try {
-    if (!fs.existsSync('/tmp')) fs.mkdirSync('/tmp');
     execSync(`ffmpeg -y -i "${videoPath}" -vn -ar 16000 -ac 1 "${tempWav}"`, { stdio: 'ignore' });
 
     console.log(`[Puter.js] Transcribing & translating audio...`);

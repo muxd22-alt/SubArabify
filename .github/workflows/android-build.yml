@@ -58,9 +58,12 @@ jobs:
       - name: Build Release APK
         run: gradle assembleRelease
 
+      - name: Rename APK
+        run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/SubArabify_${{ github.ref_name }}.apk
+        
       - name: Release APK
         uses: softprops/action-gh-release@v1
         with:
-          files: app/build/outputs/apk/release/app-release.apk
+          files: app/build/outputs/apk/release/SubArabify_${{ github.ref_name }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
