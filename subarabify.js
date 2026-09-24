@@ -28,7 +28,7 @@ function parseSRT(data) {
 }
 
 function buildSRT(cues) {
-  let srt = `1\n00:00:01,000 --> 00:00:04,000\n[ SubArabify — Powered by Puter.js ]\n\n`;
+  let srt = `1\n00:00:01,000 --> 00:00:04,000\n[ ترجمت الأداة ساب أرابيفاي — مدعوم من Puter.js ]\n\n`;
   cues.forEach((cue, idx) => {
     srt += `${idx + 2}\n${cue.start} --> ${cue.end}\n${cue.text}\n\n`;
   });

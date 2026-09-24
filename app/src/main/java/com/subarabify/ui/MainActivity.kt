@@ -76,10 +76,10 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     topBar = {
                         TopAppBar(
-                            title = { Text("SubArabify Helper", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold) },
+                            title = { Text("مساعد ساب أرابيفاي", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold) },
                             actions = {
                                 IconButton(onClick = { showSetupDialog = true }) {
-                                    Icon(Icons.Default.Settings, contentDescription = "Setup Termux", tint = Color.White)
+                                    Icon(Icons.Default.Settings, contentDescription = "إعداد تيرمكس", tint = Color.White)
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF1E1E1E))
@@ -116,26 +116,26 @@ class MainActivity : ComponentActivity() {
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
             ) {
-                Text("Select Media Folder", fontSize = 16.sp)
+                Text("اختيار مجلد الوسائط", fontSize = 16.sp)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             if (selectedFolder != null) {
-                Text("Tracking: $selectedRawPath", fontSize = 13.sp, color = Color.Gray, textAlign = TextAlign.Center)
+                Text("قيد التتبع: $selectedRawPath", fontSize = 13.sp, color = Color.Gray, textAlign = TextAlign.Center)
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
             if (isScanning) {
                 CircularProgressIndicator(color = Color(0xFF4CAF50))
-                Text("Scanning folders & episodes...", color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                Text("جاري فحص المجلدات والحلقات...", color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    StatCard("Achieved", achievedCount, Color(0xFF4CAF50))
-                    StatCard("Missing", missingCount, Color(0xFFF44336))
+                    StatCard("مكتمل", achievedCount, Color(0xFF4CAF50))
+                    StatCard("مفقود", missingCount, Color(0xFFF44336))
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -169,7 +169,7 @@ class MainActivity : ComponentActivity() {
         AlertDialog(
             onDismissRequest = onDismiss,
             containerColor = Color(0xFF1E1E1E),
-            title = { Text("Termux Setup Guide", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold) },
+            title = { Text("دليل إعداد تيرمكس", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold) },
             text = {
                 LazyColumn {
                     item {
@@ -181,10 +181,10 @@ class MainActivity : ComponentActivity() {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(20.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("IMPORTANT", fontWeight = FontWeight.Bold, color = Color.White)
+                                    Text("هام", fontWeight = FontWeight.Bold, color = Color.White)
                                 }
                                 Text(
-                                    "Do NOT install Termux from Google Play. Install the F-Droid or GitHub version.",
+                                    "لا تقم بتثبيت تيرمكس من متجر بلاي. قم بتثبيته من F-Droid.",
                                     color = Color.LightGray, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp)
                                 )
                                 Button(
@@ -195,20 +195,20 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.padding(top = 8.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00796B))
                                 ) {
-                                    Text("Get Termux from F-Droid")
+                                    Text("تحميل تيرمكس من F-Droid")
                                 }
                             }
                         }
                     }
                     
-                    item { SetupStep("1. Grant Storage Access", "termux-setup-storage", context) }
-                    item { SetupStep("2. Install Dependencies", "pkg update && pkg install nodejs ffmpeg -y", context) }
-                    item { SetupStep("3. Clone SubArabify", "git clone https://github.com/muxd22-alt/SubArabify.git && cd SubArabify && npm install", context) }
-                    item { SetupStep("4. Run Automation (Uses Selected Folder)", "node subarabify.js --media \"$rawPath\"", context) }
+                    item { SetupStep("1. منح إذن التخزين", "termux-setup-storage", context) }
+                    item { SetupStep("2. تثبيت التبعيات", "pkg update && pkg install nodejs ffmpeg -y", context) }
+                    item { SetupStep("3. تحميل المشروع", "git clone https://github.com/muxd22-alt/SubArabify.git && cd SubArabify && npm install", context) }
+                    item { SetupStep("4. تشغيل الأتمتة (باستخدام المجلد المحدد)", "node subarabify.js --media \"$rawPath\"", context) }
                 }
             },
             confirmButton = {
-                TextButton(onClick = onDismiss) { Text("Close", color = Color(0xFF4CAF50)) }
+                TextButton(onClick = onDismiss) { Text("إغلاق", color = Color(0xFF4CAF50)) }
             }
         )
     }
@@ -226,13 +226,13 @@ class MainActivity : ComponentActivity() {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         val clip = ClipData.newPlainText("Termux Command", command)
                         clipboard.setPrimaryClip(clip)
-                        Toast.makeText(context, "Command copied!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "تم نسخ الأمر!", Toast.LENGTH_SHORT).show()
                     }
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(command, color = Color(0xFF00FF00), fontSize = 12.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, modifier = Modifier.weight(1f))
-                Text("COPY", color = Color(0xFF1976D2), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("نسخ", color = Color(0xFF1976D2), fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

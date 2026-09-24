@@ -1,26 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SubArabify | Automatic Subtitle Engine</title>
-  <meta name="description" content="A background worker that does the heavy Arabic SRT lifting for your media servers.">
+  <title>ساب أرابيفاي | محرك الترجمة التلقائي</title>
+  <meta name="description" content="عامل خلفية يقوم بترجمة أفلامك ومسلسلاتك تلقائياً إلى العربية">
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;600;800&family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body, h1, h2, h3, p, a, div { font-family: 'Cairo', 'Inter', sans-serif !important; }
+    .navbar { direction: rtl; }
+    .nav-links { display: flex; gap: 15px; }
+  </style>
 </head>
 <body>
 
   <!-- Navigation -->
   <nav class="navbar">
     <div class="logo">
-      <img src="SubArabify.png" alt="SubArabify Icon" />
-      <span>SUBARABIFY</span>
+      <img src="SubArabify.png" alt="أيقونة ساب أرابيفاي" />
+      <span>ساب أرابيفاي</span>
     </div>
-    <div class="nav-links" style="display: flex; gap: 15px;">
-      <a href="https://github.com/muxd22-alt/SubArabify/releases/latest" class="btn-primary" style="background-color: #333;">Get Android APK</a>
-      <a href="https://github.com/muxd22-alt/SubArabify" class="btn-primary">View on GitHub</a>
+    <div class="nav-links">
+      <a href="https://github.com/muxd22-alt/SubArabify/releases/latest" class="btn-primary" style="background-color: #333;">تحميل تطبيق أندرويد</a>
+      <a href="https://github.com/muxd22-alt/SubArabify" class="btn-primary">عرض على جيت هب</a>
     </div>
   </nav>
 
@@ -28,11 +33,11 @@
   <header class="hero">
     <div class="hero-overlay"></div>
     <div class="hero-content">
-      <h1>Infinite Subtitles. Zero Effort.</h1>
-      <p>The ultimate background worker that does the heavy Arabic SRT lifting for all your movies and TV shows completely offline.</p>
-      <div class="hero-actions" style="display: flex; gap: 20px; justify-content: center;">
-        <a href="#how-it-works" class="btn-primary btn-large">Discover How It Works</a>
-        <a href="https://github.com/muxd22-alt/SubArabify/releases/latest" class="btn-primary btn-large" style="background-color: #4CAF50;">Download Companion APK</a>
+      <h1>ترجمة غير محدودة. بدون أي مجهود.</h1>
+      <p>أفضل أداة خلفية تقوم بمهام الترجمة العربية الشاقة لجميع أفلامك ومسلسلاتك تلقائياً وبدون اتصال بالإنترنت.</p>
+      <div class="hero-actions" style="display: flex; gap: 20px; justify-content: center; direction: rtl;">
+        <a href="#how-it-works" class="btn-primary btn-large">اكتشف كيف يعمل</a>
+        <a href="https://github.com/muxd22-alt/SubArabify/releases/latest" class="btn-primary btn-large" style="background-color: #4CAF50;">تحميل التطبيق المرافق</a>
       </div>
     </div>
   </header>
@@ -43,17 +48,17 @@
     <!-- Section 1: Background Worker -->
     <section id="how-it-works" class="feature alternate">
       <div class="feature-text">
-        <h2>Unseen, Unstoppable.</h2>
-        <p>SubArabify operates as a silent background node, running seamlessly without any UI clutter. Point it at your media folder, and it passively hooks into your ecosystem—translating entire libraries while you watch.</p>
+        <h2>غير مرئي، لا يمكن إيقافه.</h2>
+        <p>يعمل ساب أرابيفاي كعقدة خلفية صامتة، يعمل بسلاسة دون فوضى في واجهة المستخدم. وجهه إلى مجلد الوسائط الخاص بك، وسيقوم بالترجمة بصمت بينما تشاهد.</p>
       </div>
       <div class="feature-visual">
         <div class="status-card glow-red">
-          <div class="status-header">Background Worker</div>
+          <div class="status-header">عامل الخلفية</div>
           <div class="pulse-ring">
             <div class="pulse-dot"></div>
           </div>
-          <div class="status-info">Watching: ~/Movies</div>
-          <div class="status-info">Monitoring: TV Shows</div>
+          <div class="status-info">يراقب: ~/Movies</div>
+          <div class="status-info">يرصد: TV Shows</div>
         </div>
       </div>
     </section>
@@ -63,15 +68,15 @@
     <!-- Section 2: Audio & SRT Extraction -->
     <section class="feature">
       <div class="feature-text">
-        <h2>No SRT? No Problem.</h2>
-        <p>When English subtitles are included natively, SubArabify instantly bridges the gap via high-speed AI translation. But if a movie has no subtitles? It dynamically hooks into <strong>FFmpeg</strong>, aggressively rips the vocal track, and builds entirely new Arabic subtitles from raw audio.</p>
+        <h2>لا يوجد ملف ترجمة؟ لا مشكلة.</h2>
+        <p>عندما يتم تضمين الترجمة الإنجليزية كملف داخل الفيلم، يقوم التطبيق بترجمتها فوراً بالذكاء الاصطناعي السريع. لكن إذا لم يمتلك الفيلم أي ترجمة، يستخدم أداة <strong>FFmpeg</strong> لاستخراج الصوت الأصلي وبناء ترجمة عربية متزامنة بالكامل من الصفر.</p>
       </div>
       <div class="feature-visual">
         <div class="code-window">
           <div class="window-header">
             <span></span><span></span><span></span>
           </div>
-          <pre><code>[FFmpeg] Parsing audio track
+          <pre style="direction: ltr; text-align: left;"><code>[FFmpeg] Parsing audio track
 [Puter.js] Keyless translation initiated
 [SubArabify] Bridling timed text...
 [Success] Insterstellar.ar.srt saved.</code></pre>
@@ -84,16 +89,16 @@
     <!-- Section 3: Smart Naming & Episode Logic -->
     <section class="feature alternate">
       <div class="feature-text">
-        <h2>Ruthlessly Smart Detection.</h2>
-        <p>Your library is messy. SubArabify doesn't care. It recursively detects TV series hierarchies, flawlessly maps weirdly-named files to their corresponding `eng.srt`, or intelligently matches them to the exact TV episode name dynamically. Every file mapped flawlessly.</p>
+        <h2>اكتشاف ذكي للغاية.</h2>
+        <p>مكتبتك عشوائية التسمية؟ ساب أرابيفاي لا يهتم بذلك. يكتشف المجلدات المتفرعة بدقة، ويطابق الأسماء المبعثرة بالترجمات الأصلية، أويبحث تلقائياً عن حلقة التلفاز. كل مسار يتم ربطه بدقة متناهية.</p>
       </div>
-      <div class="feature-visual">
+      <div class="feature-visual" style="direction: ltr; text-align: left;">
         <div class="file-tree">
           <div class="folder">📺 Breaking Bad / Season 1</div>
           <div class="file video">S01E01_Pilot.mkv</div>
-          <div class="file subtitle added">↳ S01E01_Pilot.SubArabify.ar.srt</div>
+          <div class="file subtitle added" style="direction: ltr;">↳ S01E01_Pilot.SubArabify.ar.srt</div>
           <div class="file video">S01E02_Cats_in_the_bag.mp4</div>
-          <div class="file subtitle scan">↳ Processing...</div>
+          <div class="file subtitle scan" style="direction: rtl;">↳ قيد المعالجة...</div>
         </div>
       </div>
     </section>
@@ -103,14 +108,14 @@
     <!-- Section 4: Skips Old Work -->
     <section class="feature">
       <div class="feature-text">
-        <h2>Never Works Twice.</h2>
-        <p>Why waste compute on what's already done? SubArabify actively hashes file trees to detect existing Arabic translations. If the heavy lifting is already verified, it instantly skips the file, conserving maximum resources for unmatched speed.</p>
+        <h2>لا يقوم بالعمل مرتين.</h2>
+        <p>لماذا تهدر مواردك على ما تم إنجازه؟ يتحقق ساب أرابيفاي بذكاء من بنية الملفات لمعرفة إن وجدت ترجمات تم صنعها مسبقاً، وإذا وجدها سيتخطى الفحص فوراً مما يحافظ على الأداء بأفضل وتيرة.</p>
       </div>
       <div class="feature-visual centered-visual">
         <div class="skip-badge">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          <h3>Already Arabic</h3>
-          <p>Scan skipped.</p>
+          <h3>مُترجم مسبقاً</h3>
+          <p>تم التخطي بنجاح.</p>
         </div>
       </div>
     </section>
@@ -119,8 +124,8 @@
   <div class="divider"></div>
 
   <footer>
-    <p>Powered by Puter.js — Zero Backend. All Impact.</p>
-    <a href="https://github.com/muxd22-alt/SubArabify">Deploy the Pipeline</a>
+    <p>مبني بواسطة منصة Puter.js — بدون سيرفرات إضافية. أداء بنسبة ١٠٠%.</p>
+    <a href="https://github.com/muxd22-alt/SubArabify">تشغيل الأداة برمجياً</a>
   </footer>
 
 </body>
