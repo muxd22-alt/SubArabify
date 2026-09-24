@@ -3,6 +3,15 @@ const path = require('path');
 const { execSync } = require('child_process');
 const chokidar = require('chokidar');
 
+// Global error handlers to prevent socket/fetch terminations from abruptly stopping the daemon
+process.on('unhandledRejection', (reason) => {
+    console.error('[SubArabify Warning] Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('[SubArabify Warning] Uncaught Exception:', err);
+});
+
 // Polyfill patch for @heyputer/puter.js/src/lib/polyfills/xhrshim.js
 // Prevents TypeError when server response headers miss 'content-type'
 if (typeof globalThis.Headers !== 'undefined' && globalThis.Headers.prototype && globalThis.Headers.prototype.get) {
@@ -16,15 +25,6 @@ if (typeof globalThis.Headers !== 'undefined' && globalThis.Headers.prototype &&
     };
 }
 
-// Auto-update check
-try {
-    console.log('[SubArabify] \ud83d\udd04 Checking for updates from GitHub...');
-    execSync('git pull --rebase', { stdio: 'inherit', cwd: __dirname });
-    console.log('[SubArabify] \u2705 Up to date!');
-} catch (e) {
-    console.log('[SubArabify] \u26a0\ufe0f Note: Could not auto-update from git. Skipping.');
-}
-
 const PUTER_TOKEN = process.env.PUTER_AUTH_TOKEN || '';
 
 let puter;
@@ -34,7 +34,52 @@ const args = process.argv.slice(2);
 const mediaIdx = args.indexOf('--media');
 const MEDIA_DIR = mediaIdx !== -1 ? args[mediaIdx + 1] : '/sdcard/Movies';
 
-console.log(`[SubArabify Puter] Active and watching: ${MEDIA_DIR}`);
+// Sequential Processing Queue
+const fileQueue = [];
+const processingFiles = new Set();
+let isProcessingQueue = false;
+let videoProcessor = processVideoFile;
+
+function setVideoProcessor(fn) {
+    videoProcessor = fn;
+}
+
+async function processQueue() {
+    if (isProcessingQueue) return;
+    isProcessingQueue = true;
+
+    while (fileQueue.length > 0) {
+        const filePath = fileQueue.shift();
+        console.log(`[Queue] Processing file (${fileQueue.length} remaining): ${path.basename(filePath)}`);
+        try {
+            await videoProcessor(filePath);
+        } catch (err) {
+            console.error(`[Queue Error] Error processing ${path.basename(filePath)}:`, err.message || err);
+        } finally {
+            processingFiles.delete(filePath);
+        }
+    }
+
+    isProcessingQueue = false;
+}
+
+function enqueueFile(filePath) {
+    const ext = path.extname(filePath).toLowerCase();
+    if (!['.mp4', '.mkv', '.avi', '.m4v'].includes(ext)) return false;
+
+    const dir = path.dirname(filePath);
+    const baseName = path.basename(filePath, ext);
+    const arSrtPath = path.join(dir, `${baseName}.SubArabify.ar.srt`);
+
+    if (fs.existsSync(arSrtPath)) return false;
+    if (processingFiles.has(filePath)) return false;
+
+    processingFiles.add(filePath);
+    fileQueue.push(filePath);
+    console.log(`[Queue] Enqueued: ${path.basename(filePath)} (Total queued: ${fileQueue.length})`);
+    processQueue().catch(e => console.error('[Queue Error]', e));
+    return true;
+}
 
 // 1. SRT Parser and Builder
 function parseSRT(data) {
@@ -53,7 +98,7 @@ function parseSRT(data) {
 }
 
 function buildSRT(cues) {
-  let srt = `1\n00:00:01,000 --> 00:00:04,000\n[ \u062a\u0631\u062c\u0645\u062a \u0627\u0644\u0623\u062f\u0627\u0629 \u0633\u0627\u0628 \u0623\u0631\u0627\u0628\u064a\u0641\u0627\u064a \u2014 \u0645\u062f\u0639\u0648\u0645 \u0645\u0646 Puter.js ]\n\n`;
+  let srt = `1\n00:00:01,000 --> 00:00:04,000\n[ ترجمت الأداة ساب أرابيفاي — مدعوم من Puter.js ]\n\n`;
   cues.forEach((cue, idx) => {
     srt += `${idx + 2}\n${cue.start} --> ${cue.end}\n${cue.text}\n\n`;
   });
@@ -238,9 +283,6 @@ async function transcribeAudioWithPuter(videoPath, targetArSrtPath) {
 
 // 4. File Processor & Folder Monitor
 async function processVideoFile(videoPath) {
-  // Prevent parallel processing anomalies when many files drop at once
-  await new Promise(r => setTimeout(r, 1000));
-  
   const dir = path.dirname(videoPath);
   const ext = path.extname(videoPath);
   const baseName = path.basename(videoPath, ext);
@@ -265,6 +307,17 @@ async function processVideoFile(videoPath) {
 
 // Initial full-scan on boot + active watching
 async function start() {
+    // Auto-update check
+    try {
+        console.log('[SubArabify] 🔄 Checking for updates from GitHub...');
+        execSync('git pull --rebase', { stdio: 'inherit', cwd: __dirname });
+        console.log('[SubArabify] ✅ Up to date!');
+    } catch (e) {
+        console.log('[SubArabify] ⚠️ Note: Could not auto-update from git. Skipping.');
+    }
+
+    console.log(`[SubArabify Puter] Active and watching: ${MEDIA_DIR}`);
+
     try {
         const puterModule = await import('@heyputer/puter.js');
         puter = puterModule.default || puterModule;
@@ -272,20 +325,36 @@ async function start() {
         if (PUTER_TOKEN) {
             puter.setAuthToken(PUTER_TOKEN);
         } else {
-            console.log('[SubArabify] \u26a0\ufe0f  \u0644\u0645 \u064a\u062a\u0645 \u062a\u0639\u064a\u064a\u0646 PUTER_AUTH_TOKEN \u2014 \u0633\u064a\u062a\u0645 \u0645\u062d\u0627\u0648\u0644\u0629 \u0627\u0644\u0645\u0635\u0627\u062f\u0642\u0629 \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629');
+            console.log('[SubArabify] ⚠️  لم يتم تعيين PUTER_AUTH_TOKEN — سيتم محاولة المصادقة التلقائية');
         }
     } catch (e) {
-        console.error('[SubArabify] \u274c \u062e\u0637\u0623 \u0641\u064a \u062a\u0647\u064a\u0626\u0629 Puter.js:', e.message);
-        console.log('[SubArabify] \ud83d\udca1 \u062a\u0623\u0643\u062f \u0645\u0646 \u062a\u062b\u0628\u064a\u062a \u0627\u0644\u062d\u0632\u0645: npm install');
+        console.error('[SubArabify] ❌ خطأ في تهيئة Puter.js:', e.message);
+        console.log('[SubArabify] 💡 تأكد من تثبيت الحزم: npm install');
         process.exit(1);
     }
 
     const watcher = chokidar.watch(MEDIA_DIR, { persistent: true, depth: 4, awaitWriteFinish: true });
     watcher.on('add', filePath => {
-      if (['.mp4', '.mkv', '.avi', '.m4v'].includes(path.extname(filePath).toLowerCase())) {
-        processVideoFile(filePath).catch(e => console.error(e));
-      }
+      enqueueFile(filePath);
     });
 }
 
-start();
+if (require.main === module) {
+    start();
+}
+
+module.exports = {
+    parseSRT,
+    buildSRT,
+    withRetry,
+    extractResponseText,
+    timeToMs,
+    msToTime,
+    processVideoFile,
+    setVideoProcessor,
+    enqueueFile,
+    processQueue,
+    fileQueue,
+    processingFiles,
+    start
+};
