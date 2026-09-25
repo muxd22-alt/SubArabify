@@ -4,7 +4,8 @@
   "description": "SubArabify Puter.js Edition",
   "main": "subarabify.js",
   "scripts": {
-    "start": "node subarabify.js"
+    "start": "node subarabify.js",
+    "test": "node --test"
   },
   "dependencies": {
     "@heyputer/puter.js": "^2.6.3",
