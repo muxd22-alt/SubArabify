@@ -173,6 +173,9 @@ ${textChunk}`;
       });
     } catch (err) {
       console.error(`[Fatal] Chunk translation permanently failed. Skipping file: ${err.message}`);
+      if (err.message && err.message.toLowerCase().includes('insufficient credits')) {
+        throw new Error('Insufficient credits');
+      }
       return;
     }
   }
@@ -217,6 +220,8 @@ async function transcribeAudioWithPuter(videoPath, targetArSrtPath) {
     console.log(`[Puter.js] Split into ${chunkFiles.length} audio chunk(s). Transcribing...`);
 
     let allCues = [];
+    let hasFailedChunk = false;
+    let isInsufficientCredits = false;
 
     for (let i = 0; i < chunkFiles.length; i++) {
       const chunkPath = path.join(tmpFolder, chunkFiles[i]);
@@ -256,28 +261,50 @@ async function transcribeAudioWithPuter(videoPath, targetArSrtPath) {
           }
         }
       } catch (chunkErr) {
-        console.error(`[Puter Error] Chunk ${i + 1} permanently failed. Skipping this chunk.`);
+        hasFailedChunk = true;
+        console.error(`[Puter Error] Chunk ${i + 1} permanently failed: ${chunkErr.message}`);
+        if (chunkErr.message && chunkErr.message.toLowerCase().includes('insufficient credits')) {
+          isInsufficientCredits = true;
+          try { fs.unlinkSync(chunkPath); } catch(e) {}
+          break;
+        }
       }
 
       // Clean up chunk file immediately to save phone storage
       try { fs.unlinkSync(chunkPath); } catch(e) {}
     }
 
-    if (allCues.length > 0) {
+    // Cleanup remaining leftover chunk files if broken out early
+    try {
+      fs.readdirSync(tmpFolder)
+        .filter(f => f.startsWith(`chunk_${stamp}_`))
+        .forEach(f => { try { fs.unlinkSync(path.join(tmpFolder, f)); } catch(e) {} });
+    } catch(e) {}
+
+    if (isInsufficientCredits) {
+      throw new Error('Insufficient credits');
+    }
+
+    if (!hasFailedChunk && allCues.length > 0) {
       fs.writeFileSync(targetArSrtPath, buildSRT(allCues), 'utf8');
       console.log(`[Success] Transcription saved (${allCues.length} cues): ${targetArSrtPath}`);
+    } else if (hasFailedChunk) {
+      console.error(`[Puter Speech Error] Incomplete transcription due to failed chunks. Subtitle file was NOT saved.`);
     } else {
       console.error(`[Puter Speech Error] No speech detected in any chunk.`);
     }
 
   } catch (err) {
-    console.error(`[Puter Speech Error] Fatal error in transcription:`, err.message);
+    console.error(`[Puter Speech Error] Error in transcription:`, err.message);
     // Cleanup any leftover chunk files
     try {
       fs.readdirSync(tmpFolder)
         .filter(f => f.startsWith(`chunk_${stamp}_`))
         .forEach(f => { try { fs.unlinkSync(path.join(tmpFolder, f)); } catch(e) {} });
     } catch(e) {}
+    if (err.message && err.message.toLowerCase().includes('insufficient credits')) {
+      throw err;
+    }
   }
 }
 
