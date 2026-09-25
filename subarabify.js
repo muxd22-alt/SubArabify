@@ -55,11 +55,6 @@ async function processQueue() {
             await videoProcessor(filePath);
         } catch (err) {
             console.error(`[Queue Error] Error processing ${path.basename(filePath)}:`, err.message || err);
-            if (err.message && err.message.toLowerCase().includes('insufficient credits')) {
-                console.error('[SubArabify] ⚠️ Puter API credits exhausted. Pausing queue processing for remaining files.');
-                fileQueue.length = 0; // Clear remaining queue so we don't spam failing requests
-                break;
-            }
         } finally {
             processingFiles.delete(filePath);
         }

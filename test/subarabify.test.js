@@ -115,36 +115,3 @@ test('enqueueFile validates file types and manages queue', async () => {
     // Cleanup
     fs.rmSync(tmpDir, { recursive: true, force: true });
 });
-
-test('queue pauses when Insufficient credits error occurs', async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'subarabify_test_credit_'));
-    const movie1 = path.join(tmpDir, 'movie1.mp4');
-    const movie2 = path.join(tmpDir, 'movie2.mp4');
-
-    fs.writeFileSync(movie1, 'fake video');
-    fs.writeFileSync(movie2, 'fake video');
-
-    const processedList = [];
-    setVideoProcessor(async (file) => {
-        processedList.push(file);
-        if (file === movie1) {
-            throw new Error('Insufficient credits');
-        }
-    });
-
-    fileQueue.length = 0;
-    processingFiles.clear();
-
-    enqueueFile(movie1);
-    enqueueFile(movie2);
-
-    await new Promise(r => setTimeout(r, 50));
-
-    // Movie1 failed with Insufficient credits, queue should be cleared
-    assert.equal(processedList.length, 1);
-    assert.equal(processedList[0], movie1);
-    assert.equal(fileQueue.length, 0);
-
-    setVideoProcessor(processVideoFile);
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-});
